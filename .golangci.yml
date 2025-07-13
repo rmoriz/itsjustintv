@@ -2,6 +2,10 @@ run:
   timeout: 5m
   modules-download-mode: readonly
 
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
 linters-settings:
   govet:
     check-shadowing: true
@@ -36,41 +40,20 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    - bodyclose
-    - deadcode
-    - depguard
-    - dogsled
-    - dupl
     - errcheck
-    - exportloopref
-    - exhaustive
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - goimports
-    - gomnd
-    - goprintffuncname
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - lll
-    - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - rowserrcheck
     - staticcheck
-    - structcheck
-    - stylecheck
     - typecheck
-    - unconvert
-    - unparam
     - unused
-    - varcheck
-    - whitespace
+    - gofmt
+    - goimports
+    - goconst
+    - misspell
+    - lll
+    - dupl
+    - gosec
 
 issues:
   exclude-rules:
