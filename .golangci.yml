@@ -12,7 +12,6 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
 
 issues:
   exclude-rules:
