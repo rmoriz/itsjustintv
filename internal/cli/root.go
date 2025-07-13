@@ -30,7 +30,9 @@ Twitch's EventSub webhook system and downstream notification systems.
 
 It receives real-time stream events, enriches them with metadata, and dispatches 
 notifications through configurable webhooks or file output.`,
-	RunE: runServer,
+	RunE:          runServer,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -71,14 +73,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	
 	// Check if config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		fmt.Printf("Error: Configuration file not found: %s\n\n", configPath)
-		fmt.Println("Configuration file loading priority:")
-		fmt.Println("1. Use value from --config flag")
-		fmt.Println("2. Use ITSJUSTINTV_CONFIG environment variable")
-		fmt.Println("3. Try to load config.toml from working directory")
-		fmt.Println()
-		cmd.Help()
-		return fmt.Errorf("configuration file not found: %s", configPath)
+		return fmt.Errorf("configuration file not found: %s\n\nConfiguration file loading priority:\n1. Use value from --config flag\n2. Use ITSJUSTINTV_CONFIG environment variable\n3. Try to load config.toml from working directory", configPath)
 	}
 	
 	// Load configuration
@@ -133,19 +128,16 @@ func init() {
 
 // configValidateCmd validates the configuration file
 var configValidateCmd = &cobra.Command{
-	Use:   "validate",
-	Short: "Validate configuration file",
+	Use:           "validate",
+	Short:         "Validate configuration file",
+	SilenceErrors: true,
+	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		configPath := determineConfigPath(configFile)
 		
 		// Check if config file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			fmt.Printf("Error: Configuration file not found: %s\n\n", configPath)
-			fmt.Println("Configuration file loading priority:")
-			fmt.Println("1. Use value from --config flag")
-			fmt.Println("2. Use ITSJUSTINTV_CONFIG environment variable")
-			fmt.Println("3. Try to load config.toml from working directory")
-			return fmt.Errorf("configuration file not found: %s", configPath)
+			return fmt.Errorf("configuration file not found: %s\n\nConfiguration file loading priority:\n1. Use value from --config flag\n2. Use ITSJUSTINTV_CONFIG environment variable\n3. Try to load config.toml from working directory", configPath)
 		}
 	
 		// Load configuration
