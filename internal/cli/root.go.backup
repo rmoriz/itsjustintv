@@ -48,49 +48,16 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 }
 
-// determineConfigPath determines the configuration file path using priority order
-func determineConfigPath(flagValue string) string {
-	// 1. Use value from --config flag (if not default)
-	if flagValue != "config.toml" {
-		return flagValue
-	}
-	
-	// 2. Use ITSJUSTINTV_CONFIG environment variable
-	if envConfig := os.Getenv("ITSJUSTINTV_CONFIG"); envConfig != "" {
-		return envConfig
-	}
-	
-	// 3. Try to load config.toml from working directory
-	return "config.toml"
-}
-
 // runServer is the main server command
 func runServer(cmd *cobra.Command, args []string) error {
-	// Determine configuration file path using priority order
-	configPath := determineConfigPath(configFile)
-	
-	// Check if config file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		fmt.Printf("Error: Configuration file not found: %s\n\n", configPath)
-		fmt.Println("Configuration file loading priority:")
-		fmt.Println("1. Use value from --config flag")
-		fmt.Println("2. Use ITSJUSTINTV_CONFIG environment variable")
-		fmt.Println("3. Try to load config.toml from working directory")
-		fmt.Println()
-		cmd.Help()
-		return fmt.Errorf("configuration file not found: %s", configPath)
-	}
-	
 	// Load configuration
-	cfg, err := config.LoadConfig(configPath)
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	// Always print which config file was loaded
-	fmt.Printf("Loaded configuration from: %s\n", configPath)
-	
 	if verbose {
+		fmt.Printf("Loaded configuration from: %s\n", configFile)
 		fmt.Printf("Server will listen on: %s:%d\n", cfg.Server.ListenAddr, cfg.Server.Port)
 		fmt.Printf("TLS enabled: %t\n", cfg.Server.TLS.Enabled)
 	}
@@ -136,25 +103,12 @@ var configValidateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate configuration file",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		configPath := determineConfigPath(configFile)
-		
-		// Check if config file exists
-		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			fmt.Printf("Error: Configuration file not found: %s\n\n", configPath)
-			fmt.Println("Configuration file loading priority:")
-			fmt.Println("1. Use value from --config flag")
-			fmt.Println("2. Use ITSJUSTINTV_CONFIG environment variable")
-			fmt.Println("3. Try to load config.toml from working directory")
-			return fmt.Errorf("configuration file not found: %s", configPath)
-		}
-	
-		// Load configuration
-		cfg, err := config.LoadConfig(configPath)
+		cfg, err := config.LoadConfig(configFile)
 		if err != nil {
 			return fmt.Errorf("configuration validation failed: %w", err)
 		}
 
-		fmt.Printf("Configuration file '%s' is valid\n", configPath)
+		fmt.Printf("Configuration file '%s' is valid\n", configFile)
 		fmt.Printf("Found %d configured streamers\n", len(cfg.Streamers))
 		
 		return nil
