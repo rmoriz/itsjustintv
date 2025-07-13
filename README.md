@@ -2,18 +2,49 @@
 
 ![itsjustintv Logo](docs/itsjustintv-logo.png)
 
-A configurable, self-hosted Go-based service that receives Twitch EventSub HTTP webhooks and notifies via downstream webhooks or file output when specified streamers go live.
+[![Go Version](https://img.shields.io/badge/Go-1.24.5+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/rmoriz/itsjustintv)](https://github.com/rmoriz/itsjustintv/releases)
+[![Docker](https://img.shields.io/badge/Docker-Available-2496ED?style=flat&logo=docker)](https://github.com/rmoriz/itsjustintv/pkgs/container/itsjustintv)
 
-## Features
+A **production-ready**, self-hosted Go service that bridges Twitch EventSub webhooks with your notification systems. Get instant, reliable notifications when your favorite streamers go live with rich metadata and flexible delivery options.
 
-- **Real-time Stream Notifications**: Receive instant notifications when your favorite streamers go live
-- **Flexible Webhook Dispatching**: Send notifications to multiple endpoints with custom payloads
-- **Metadata Enrichment**: Automatically fetch and include streamer metadata (follower count, profile images, etc.)
-- **Tag Filtering**: Filter notifications based on stream tags (language, category, etc.)
-- **Retry Mechanism**: Robust retry logic with exponential backoff for failed webhook deliveries
-- **HTTPS Support**: Optional Let's Encrypt integration for secure webhook endpoints
-- **File Output**: Optionally save webhook payloads to JSON files for debugging or archival
-- **OpenTelemetry**: Built-in observability with metrics and tracing support
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Webhook Payload](#webhook-payload)
+- [CLI Commands](#cli-commands)
+- [Development](#development)
+- [Docker](#docker)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+
+## Key Features
+
+### Core Functionality
+- **Real-time Stream Notifications**: Instant notifications via Twitch EventSub webhooks
+- **Automatic User ID Resolution**: Configure streamers with just their login name - user IDs are resolved automatically
+- **Smart Webhook Dispatching**: Send notifications to multiple endpoints with custom payloads
+- **Rich Metadata Enrichment**: Automatically fetch streamer info (follower count, profile images, descriptions)
+
+### Reliability & Performance
+- **Robust Retry Logic**: Exponential backoff for failed webhook deliveries with persistent state
+- **Duplicate Detection**: Built-in deduplication prevents spam notifications
+- **HMAC Signature Validation**: Secure webhook verification and optional payload signing
+- **Graceful Error Handling**: Continues operation even when external services fail
+
+### Operations & Monitoring
+- **HTTPS Support**: Let's Encrypt integration for secure webhook endpoints
+- **OpenTelemetry Integration**: Built-in observability with metrics and distributed tracing
+- **File Output**: JSON logging for debugging, archival, and integration testing
+- **Health Checks**: Built-in health endpoints for monitoring and load balancers
+
+### Advanced Filtering
+- **Tag-based Filtering**: Only notify for streams with specific tags (language, category, etc.)
+- **Custom Tag Injection**: Add your own tags to webhook payloads for downstream processing
+- **Per-streamer Configuration**: Different webhook URLs and settings for each streamer
 
 ## Quick Start
 
@@ -82,48 +113,81 @@ cd itsjustintv
 go build -o itsjustintv ./cmd/itsjustintv
 ```
 
-### Configuration
+### Getting Started
 
-Generate an example configuration file:
+1. **Get Twitch Application Credentials**
+   
+   Create a Twitch application at [dev.twitch.tv/console](https://dev.twitch.tv/console):
+   - Set OAuth Redirect URL to your webhook endpoint
+   - Note down your Client ID and Client Secret
+   - Generate a webhook secret for HMAC validation
 
-```bash
-./itsjustintv config example
-```
+2. **Generate Configuration**
 
-Edit `config.example.toml` with your Twitch application credentials and streamer configurations:
+   ```bash
+   ./itsjustintv config example
+   cp config.example.toml config.toml
+   ```
+
+3. **Configure Your Streamers**
+
+   Edit `config.toml` with your credentials and streamers:
+
+   ```toml
+   [twitch]
+   client_id = "your_twitch_client_id"
+   client_secret = "your_twitch_client_secret"
+   webhook_secret = "your_webhook_secret"
+
+   # Simple configuration - user_id will be resolved automatically!
+   [streamers.my_favorite_streamer]
+   login = "shroud"  # Just the login name - user_id auto-resolved
+   webhook_url = "https://your-webhook-endpoint.com/webhook"
+   
+   # Advanced configuration with filtering
+   [streamers.another_streamer]
+   login = "ninja"
+   webhook_url = "https://another-endpoint.com/webhook"
+   tag_filter = ["English", "Gaming"]  # Only notify for these tags
+   additional_tags = ["vip_streamer"]  # Add custom tags to payload
+   hmac_secret = "optional_hmac_secret"  # Sign this webhook
+   ```
+
+4. **Start the Service**
+
+   ```bash
+   ./itsjustintv --config config.toml
+   ```
+
+   The service will:
+   - Automatically resolve user IDs for streamers configured with just `login`
+   - Start listening for Twitch webhooks on the configured port
+   - Begin dispatching notifications when streamers go live
+
+## Configuration
+
+### Automatic User ID Resolution
+
+**NEW**: You can now configure streamers with just their login name! The service automatically resolves user IDs using Twitch's API during startup.
 
 ```toml
-[twitch]
-client_id = "your_twitch_client_id"
-client_secret = "your_twitch_client_secret"
-webhook_secret = "your_webhook_secret"
-
+# Before (still supported)
 [streamers.example_streamer]
 user_id = "123456789"
 login = "example_streamer"
-webhook_url = "https://your-webhook-endpoint.com/webhook"
-tag_filter = ["English", "Gaming"]
-additional_tags = ["custom_tag"]
+webhook_url = "https://example.com/webhook"
+
+# After (recommended - simpler!)
+[streamers.example_streamer]
+login = "example_streamer"  # user_id will be auto-resolved
+webhook_url = "https://example.com/webhook"
 ```
 
-### Running
-
-Start the service:
-
-```bash
-./itsjustintv --config config.toml
-```
-
-Or with environment variables:
-
-```bash
-export ITSJUSTINTV_TWITCH_CLIENT_ID="your_client_id"
-export ITSJUSTINTV_TWITCH_CLIENT_SECRET="your_client_secret"
-export ITSJUSTINTV_TWITCH_WEBHOOK_SECRET="your_webhook_secret"
-./itsjustintv
-```
-
-## Configuration
+**How it works:**
+- On startup, the service checks each streamer configuration
+- If `user_id` is missing but `login` is present, it queries Twitch's API
+- The resolved `user_id` is used internally (not saved to config file)
+- Logs show successful resolutions: `Resolved user ID for streamer 'example': login='shroud' -> user_id='37402112'`
 
 ### Server Configuration
 
@@ -153,8 +217,14 @@ token_file = "data/tokens.json"
 
 ```toml
 [streamers.streamer_name]
+# Option 1: Automatic resolution (recommended)
+login = "streamer_login"           # Twitch login name - user_id auto-resolved
+
+# Option 2: Manual specification (still supported)
 user_id = "123456789"              # Twitch user ID
 login = "streamer_login"           # Twitch login name
+
+# Common settings
 webhook_url = "https://example.com/webhook"
 tag_filter = ["English", "Gaming"] # Optional: filter by stream tags
 additional_tags = ["vip"]          # Optional: add custom tags to payload
@@ -191,31 +261,72 @@ service_name = "itsjustintv"
 service_version = "1.6.0"
 ```
 
-**Note**: OpenTelemetry support requires additional setup. When using single binary releases, telemetry features are included but optional.
+### Environment Variables
+
+Override any configuration with environment variables:
+
+```bash
+export ITSJUSTINTV_TWITCH_CLIENT_ID="your_client_id"
+export ITSJUSTINTV_TWITCH_CLIENT_SECRET="your_client_secret"
+export ITSJUSTINTV_TWITCH_WEBHOOK_SECRET="your_webhook_secret"
+export ITSJUSTINTV_SERVER_PORT="8080"
+export ITSJUSTINTV_TLS_ENABLED="true"
+```
 
 ## Webhook Payload
 
-When a streamer goes live, the service sends a JSON payload to the configured webhook URL:
+When a streamer goes live, the service sends a rich JSON payload to the configured webhook URL:
 
 ```json
 {
-  "streamer_login": "example_streamer",
-  "streamer_name": "Example Streamer",
-  "streamer_id": "123456789",
-  "url": "https://twitch.tv/example_streamer",
+  "streamer_login": "shroud",
+  "streamer_name": "shroud",
+  "streamer_id": "37402112",
+  "url": "https://twitch.tv/shroud",
   "view_count": 1337,
   "followers_count": 50000,
-  "tags": ["English", "Gaming", "Just Chatting"],
+  "tags": ["English", "Gaming", "FPS"],
   "language": "en",
-  "description": "Playing some games and chatting!",
+  "description": "Professional gamer and content creator",
   "image": {
     "url": "https://static-cdn.jtvnw.net/jtv_user_pictures/...",
     "width": 300,
     "height": 300
   },
   "timestamp": "2025-07-13T12:00:00Z",
-  "additional_tags": ["vip", "custom_tag"]
+  "additional_tags": ["vip", "custom_tag"],
+  "stream": {
+    "id": "123456789",
+    "type": "live",
+    "started_at": "2025-07-13T12:00:00Z",
+    "title": "Playing some FPS games!",
+    "game_name": "Counter-Strike 2",
+    "game_id": "32399"
+  }
 }
+```
+
+### HMAC Signature Verification
+
+If you configure an `hmac_secret` for a streamer, webhooks will include an HMAC signature in the `X-Signature-256` header:
+
+```bash
+X-Signature-256: sha256=abc123def456...
+```
+
+Verify the signature in your webhook handler:
+
+```python
+import hmac
+import hashlib
+
+def verify_signature(payload, signature, secret):
+    expected = hmac.new(
+        secret.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
 ```
 
 ## CLI Commands
@@ -223,6 +334,12 @@ When a streamer goes live, the service sends a JSON payload to the configured we
 ```bash
 # Start the server
 ./itsjustintv
+
+# Start with specific config file
+./itsjustintv --config /path/to/config.toml
+
+# Enable verbose logging
+./itsjustintv --verbose
 
 # Show version information
 ./itsjustintv version
@@ -243,49 +360,80 @@ When a streamer goes live, the service sends a JSON payload to the configured we
 
 - Go 1.24.5 or later
 - Git
+- [Just](https://github.com/casey/just) (recommended)
+
+### Development Workflow
+
+```bash
+# Clone the repository
+git clone https://github.com/rmoriz/itsjustintv.git
+cd itsjustintv
+
+# Install development tools
+just install-tools
+
+# Run the development cycle
+just dev  # formats, tests, builds, and runs
+
+# Or run individual commands
+just fmt      # Format code
+just lint     # Run linter
+just test     # Run tests
+just build    # Build binary
+just run      # Run with example config
+```
+
+### Testing
+
+```bash
+# Run all tests
+just test
+
+# Run tests with coverage
+just test-coverage
+
+# Run integration tests
+just test-integration
+
+# Watch for changes and re-run tests
+just watch
+```
 
 ### Building
 
 ```bash
-# Install dependencies
-go mod tidy
-
-# Run tests
-go test ./...
-
-# Run tests with coverage
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
-
-# Build binary
-go build -o itsjustintv ./cmd/itsjustintv
+# Build for current platform
+just build
 
 # Build with version information
-go build -ldflags "-X github.com/rmoriz/itsjustintv/internal/cli.Version=1.6.0 -X github.com/rmoriz/itsjustintv/internal/cli.GitCommit=$(git rev-parse HEAD) -X github.com/rmoriz/itsjustintv/internal/cli.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o itsjustintv ./cmd/itsjustintv
+just build-release v1.6.0
+
+# Build for all platforms
+just build-all v1.6.0
+
+# Clean build artifacts
+just clean
 ```
 
-### Multi-Platform Builds
-
-The project supports building for multiple platforms:
+### Code Quality
 
 ```bash
-# Linux amd64
-GOOS=linux GOARCH=amd64 go build -o itsjustintv-linux-amd64 ./cmd/itsjustintv
+# Run all quality checks
+just check
 
-# Linux arm64
-GOOS=linux GOARCH=arm64 go build -o itsjustintv-linux-arm64 ./cmd/itsjustintv
-
-# macOS aarch64 (Apple Silicon)
-GOOS=darwin GOARCH=arm64 go build -o itsjustintv-darwin-aarch64 ./cmd/itsjustintv
+# Individual checks
+just fmt      # Format code
+just lint     # Run golangci-lint
+just test     # Run tests
 ```
-
-**Note**: All binary releases include OpenTelemetry support and are built as static binaries for maximum compatibility.
 
 ## Docker
 
+### Using Pre-built Images
+
 ```bash
-# Build Docker image
-docker build -t itsjustintv .
+# Pull the latest image
+docker pull ghcr.io/rmoriz/itsjustintv:latest
 
 # Run with Docker
 docker run -d \
@@ -293,42 +441,207 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config.toml:/app/config.toml \
   -v $(pwd)/data:/app/data \
-  itsjustintv
+  ghcr.io/rmoriz/itsjustintv:latest
+```
+
+### Building Your Own Image
+
+```bash
+# Build Docker image
+just docker-build itsjustintv:latest
+
+# Run your custom image
+just docker-run itsjustintv:latest 8080
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  itsjustintv:
+    image: ghcr.io/rmoriz/itsjustintv:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.toml:/app/config.toml
+      - ./data:/app/data
+    environment:
+      - ITSJUSTINTV_TWITCH_CLIENT_ID=your_client_id
+      - ITSJUSTINTV_TWITCH_CLIENT_SECRET=your_client_secret
+      - ITSJUSTINTV_TWITCH_WEBHOOK_SECRET=your_webhook_secret
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 ```
 
 ## Architecture
 
-The service is built with a modular architecture:
+The service is built with a modular, production-ready architecture:
 
-- **HTTP Server**: Handles incoming Twitch EventSub webhooks
-- **Config Manager**: TOML configuration with hot-reloading support
-- **Twitch Client**: Manages Twitch API interactions and token lifecycle
-- **Webhook Dispatcher**: Sends notifications to configured endpoints
-- **Metadata Enricher**: Fetches and caches streamer metadata
-- **Retry Manager**: Handles failed webhook deliveries with exponential backoff
-- **Cache Manager**: Provides deduplication and metadata caching
-- **File Output**: Optional JSON file output for debugging
+### Core Components
+
+- **HTTP Server**: Handles incoming Twitch EventSub webhooks with graceful shutdown
+- **Config Manager**: TOML configuration with environment variable overrides
+- **Twitch Client**: Manages API interactions, token lifecycle, and user resolution
+- **Webhook Dispatcher**: Concurrent notification delivery with retry logic
+- **Metadata Enricher**: Fetches and caches streamer metadata with fallbacks
+- **Retry Manager**: Persistent retry queue with exponential backoff
+- **Cache Manager**: Event deduplication and metadata caching
+- **Output Writer**: Structured JSON logging for debugging and integration
+
+### Data Flow
+
+1. **Startup**: Load config → Resolve user IDs → Start Twitch client → Initialize services
+2. **Webhook Receipt**: Validate signature → Process notification → Check for duplicates
+3. **Event Processing**: Find streamer config → Enrich metadata → Create payload
+4. **Delivery**: Dispatch webhook → Handle failures → Queue retries → Log results
+
+### Security Features
+
+- HMAC signature validation for incoming webhooks
+- Optional HMAC signing for outgoing webhooks
+- Let's Encrypt integration for HTTPS
+- No sensitive data in logs
+- Secure token storage and rotation
 
 For detailed architecture information, see [docs/architecture.md](docs/architecture.md).
 
+## Monitoring & Observability
+
+### Health Checks
+
+```bash
+# Basic health check
+curl http://localhost:8080/health
+
+# Response
+{
+  "status": "healthy",
+  "service": "itsjustintv",
+  "timestamp": "2025-07-13T12:00:00Z"
+}
+```
+
+### OpenTelemetry Integration
+
+Enable comprehensive observability:
+
+```toml
+[telemetry]
+enabled = true
+endpoint = "http://localhost:4318"  # OTLP HTTP endpoint
+service_name = "itsjustintv"
+service_version = "1.6.0"
+```
+
+**Metrics collected:**
+- Webhook processing latency
+- Success/failure rates
+- Retry queue depth
+- API call performance
+
+**Traces include:**
+- End-to-end webhook processing
+- Twitch API interactions
+- Metadata enrichment
+- Webhook delivery attempts
+
+### Logging
+
+Structured JSON logs with configurable levels:
+
+```bash
+# Enable verbose logging
+./itsjustintv --verbose
+
+# Example log output
+{"time":"2025-07-13T12:00:00Z","level":"INFO","msg":"Resolved user ID for streamer","streamer_key":"shroud","login":"shroud","user_id":"37402112"}
+{"time":"2025-07-13T12:00:00Z","level":"INFO","msg":"Webhook dispatched successfully","webhook_url":"https://example.com/webhook","streamer_key":"shroud","response_time":"150ms"}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**User ID Resolution Fails**
+```bash
+# Check Twitch credentials
+./itsjustintv config validate
+
+# Verify streamer login exists
+curl -H "Client-ID: your_client_id" \
+     -H "Authorization: Bearer your_token" \
+     "https://api.twitch.tv/helix/users?login=streamer_name"
+```
+
+**Webhooks Not Received**
+- Verify EventSub subscription is active in Twitch Developer Console
+- Check webhook URL is publicly accessible
+- Validate HMAC signature implementation
+- Review server logs for signature validation errors
+
+**High Memory Usage**
+- Reduce cache retention period
+- Lower `max_lines` in output configuration
+- Check for webhook endpoint timeouts causing retry buildup
+
+### Debug Mode
+
+```bash
+# Enable verbose logging
+./itsjustintv --verbose
+
+# Check configuration
+./itsjustintv config validate
+
+# Test webhook endpoint
+curl -X POST your-webhook-url \
+  -H "Content-Type: application/json" \
+  -d '{"test": "payload"}'
+```
+
 ## Contributing
 
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
+
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Clone your fork: `git clone https://github.com/yourusername/itsjustintv.git`
+3. Create a feature branch: `git checkout -b feature/amazing-feature`
+4. Install development tools: `just install-tools`
+5. Make your changes and test: `just check`
+6. Commit your changes: `git commit -m 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
+
+### Code Standards
+
+- Follow Go best practices and idioms
+- Add tests for new functionality
+- Update documentation for user-facing changes
+- Run `just check` before committing
+- Use conventional commit messages
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## Support & Community
 
 - **Issues**: [GitHub Issues](https://github.com/rmoriz/itsjustintv/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/rmoriz/itsjustintv/discussions)
 - **Documentation**: [docs/](docs/)
 - **Examples**: [examples/](examples/)
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
+
 ---
 
-**itsjustintv** - Making Twitch stream notifications simple and reliable.
+**itsjustintv** - Making Twitch stream notifications simple, reliable, and production-ready.
