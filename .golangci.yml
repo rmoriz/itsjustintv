@@ -1,4 +1,8 @@
 # golangci-lint v2.x configuration
+# See: https://golangci-lint.run/product/migration-guide/
+
+version: 2
+
 run:
   timeout: 5m
 
@@ -16,9 +20,13 @@ linters:
 
 linters-settings:
   govet:
-    enable-all: true
-  gofmt:
-    simplify: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
 
 issues:
   exclude-use-default: false
