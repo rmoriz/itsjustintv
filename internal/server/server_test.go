@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,20 +75,43 @@ func TestHandleHealth(t *testing.T) {
 
 func TestHandleTwitchWebhook(t *testing.T) {
 	cfg := config.DefaultConfig()
+	cfg.Twitch.WebhookSecret = "test_secret"
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	server := New(cfg, logger)
+
+	// Create a valid webhook payload
+	validPayload := `{"challenge":"test_challenge","subscription":{"id":"test","type":"stream.online"}}`
+	
+	// Generate valid signature
+	signature := server.webhookValidator.GenerateSignature([]byte(validPayload))
 
 	tests := []struct {
 		name           string
 		method         string
+		payload        string
+		signature      string
+		headers        map[string]string
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
-			name:           "POST request",
-			method:         http.MethodPost,
+			name:    "POST request with valid signature - verification",
+			method:  http.MethodPost,
+			payload: validPayload,
+			signature: signature,
+			headers: map[string]string{
+				"Twitch-Eventsub-Message-Type": "webhook_callback_verification",
+			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   "received",
+			expectedBody:   "test_challenge",
+		},
+		{
+			name:           "POST request with invalid signature",
+			method:         http.MethodPost,
+			payload:        validPayload,
+			signature:      "invalid_signature",
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody:   "Unauthorized",
 		},
 		{
 			name:           "GET request",
@@ -99,7 +123,21 @@ func TestHandleTwitchWebhook(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, "/twitch", nil)
+			var req *http.Request
+			if tt.payload != "" {
+				req = httptest.NewRequest(tt.method, "/twitch", strings.NewReader(tt.payload))
+			} else {
+				req = httptest.NewRequest(tt.method, "/twitch", nil)
+			}
+			
+			if tt.signature != "" {
+				req.Header.Set("Twitch-Eventsub-Message-Signature", tt.signature)
+			}
+			
+			for key, value := range tt.headers {
+				req.Header.Set(key, value)
+			}
+			
 			w := httptest.NewRecorder()
 
 			server.handleTwitchWebhook(w, req)
@@ -109,10 +147,6 @@ func TestHandleTwitchWebhook(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 			assert.Contains(t, string(body), tt.expectedBody)
-
-			if tt.expectedStatus == http.StatusOK {
-				assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-			}
 		})
 	}
 }

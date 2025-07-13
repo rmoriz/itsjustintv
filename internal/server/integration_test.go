@@ -105,16 +105,16 @@ func TestServerIntegrationHTTP(t *testing.T) {
 
 	// Test Twitch webhook endpoint
 	t.Run("twitch webhook endpoint", func(t *testing.T) {
+		// Test without signature (should fail)
 		resp, err := http.Post(baseURL+"/twitch", "application/json", nil)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
-		assert.Contains(t, string(body), "received")
+		assert.Contains(t, string(body), "Unauthorized")
 	})
 
 	// Test 404 for unknown paths

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -13,33 +14,55 @@ import (
 	"time"
 
 	"golang.org/x/crypto/acme/autocert"
+	"github.com/rmoriz/itsjustintv/internal/cache"
 	"github.com/rmoriz/itsjustintv/internal/config"
+	"github.com/rmoriz/itsjustintv/internal/retry"
 	"github.com/rmoriz/itsjustintv/internal/twitch"
 	"github.com/rmoriz/itsjustintv/internal/webhook"
 )
 
 // Server represents the HTTP server with optional HTTPS support
 type Server struct {
-	config          *config.Config
-	httpServer      *http.Server
-	logger          *slog.Logger
-	certManager     *autocert.Manager
+	config           *config.Config
+	httpServer       *http.Server
+	logger           *slog.Logger
+	certManager      *autocert.Manager
 	webhookValidator *webhook.Validator
 	twitchProcessor  *twitch.Processor
+	webhookDispatcher *webhook.Dispatcher
+	retryManager     *retry.Manager
+	cacheManager     *cache.Manager
 }
 
 // New creates a new server instance
 func New(cfg *config.Config, logger *slog.Logger) *Server {
+	webhookDispatcher := webhook.NewDispatcher(cfg, logger)
+	cacheManager := cache.NewManager(logger, "data/cache.json", 2*time.Hour)
+	retryManager := retry.NewManager(cfg, logger, webhookDispatcher)
+
 	return &Server{
-		config:          cfg,
-		logger:          logger,
+		config:           cfg,
+		logger:           logger,
 		webhookValidator: webhook.NewValidator(cfg.Twitch.WebhookSecret),
 		twitchProcessor:  twitch.NewProcessor(cfg, logger),
+		webhookDispatcher: webhookDispatcher,
+		retryManager:     retryManager,
+		cacheManager:     cacheManager,
 	}
 }
 
 // Start starts the HTTP server with optional HTTPS
 func (s *Server) Start(ctx context.Context) error {
+	// Start cache manager
+	if err := s.cacheManager.Start(); err != nil {
+		return fmt.Errorf("failed to start cache manager: %w", err)
+	}
+
+	// Start retry manager
+	if err := s.retryManager.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start retry manager: %w", err)
+	}
+
 	// Setup routes
 	mux := http.NewServeMux()
 	s.setupRoutes(mux)
@@ -104,6 +127,14 @@ func (s *Server) Start(ctx context.Context) error {
 			s.logger.Error("Server shutdown error", "error", err)
 			return fmt.Errorf("server shutdown error: %w", err)
 		}
+	}
+
+	// Stop managers
+	if err := s.retryManager.Stop(); err != nil {
+		s.logger.Error("Retry manager stop error", "error", err)
+	}
+	if err := s.cacheManager.Stop(); err != nil {
+		s.logger.Error("Cache manager stop error", "error", err)
 	}
 
 	s.logger.Info("Server stopped gracefully")
@@ -248,7 +279,15 @@ func (s *Server) handleTwitchWebhook(w http.ResponseWriter, r *http.Request) {
 			"message_id", headers.MessageID)
 
 	case "process":
-		// Process the event (will be implemented in Milestone 4)
+		// Process the event - dispatch webhooks
+		if err := s.processStreamEvent(processedEvent, headers.MessageID); err != nil {
+			s.logger.Error("Failed to process stream event",
+				"error", err,
+				"message_id", headers.MessageID)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"processed"}`))
@@ -289,4 +328,89 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("itsjustintv - Twitch EventSub webhook bridge\n"))
+}
+
+// processStreamEvent processes a stream.online event and dispatches webhooks
+func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messageID string) error {
+	// Extract stream event data
+	streamEvent, ok := processedEvent.Event.(twitch.StreamOnlineEvent)
+	if !ok {
+		return fmt.Errorf("invalid stream event type")
+	}
+
+	// Check for duplicates
+	eventKey := s.cacheManager.GenerateEventKey(streamEvent.BroadcasterUserID, streamEvent.ID, streamEvent.StartedAt)
+	if s.cacheManager.IsDuplicate(eventKey) {
+		s.logger.Info("Duplicate event detected, skipping",
+			"event_key", eventKey,
+			"broadcaster_login", streamEvent.BroadcasterUserLogin,
+			"message_id", messageID)
+		return nil
+	}
+
+	// Add to cache to prevent future duplicates
+	eventData, _ := json.Marshal(streamEvent)
+	s.cacheManager.AddEvent(eventKey, eventData)
+
+	// Find streamer configuration
+	var streamerKey string
+	var streamerConfig config.StreamerConfig
+	found := false
+
+	for key, cfg := range s.config.Streamers {
+		if cfg.UserID == streamEvent.BroadcasterUserID || cfg.Login == streamEvent.BroadcasterUserLogin {
+			streamerKey = key
+			streamerConfig = cfg
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("streamer configuration not found")
+	}
+
+	// Create webhook payload
+	eventDataMap := map[string]interface{}{
+		"broadcaster_user_id":    streamEvent.BroadcasterUserID,
+		"broadcaster_user_login": streamEvent.BroadcasterUserLogin,
+		"broadcaster_user_name":  streamEvent.BroadcasterUserName,
+		"id":                     streamEvent.ID,
+		"type":                   streamEvent.Type,
+		"started_at":             streamEvent.StartedAt,
+	}
+
+	payload := s.webhookDispatcher.CreatePayload(streamerKey, streamerConfig, eventDataMap)
+
+	// Create dispatch request
+	dispatchReq := &webhook.DispatchRequest{
+		WebhookURL:  streamerConfig.WebhookURL,
+		Payload:     *payload,
+		HMACSecret:  streamerConfig.HMACSecret,
+		StreamerKey: streamerKey,
+		Attempt:     1,
+	}
+
+	// Attempt initial dispatch
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result := s.webhookDispatcher.Dispatch(ctx, dispatchReq)
+
+	if !result.Success {
+		// Add to retry queue
+		s.retryManager.AddRequest(dispatchReq)
+		s.logger.Warn("Initial webhook dispatch failed, added to retry queue",
+			"webhook_url", dispatchReq.WebhookURL,
+			"streamer_key", streamerKey,
+			"error", result.Error,
+			"status_code", result.StatusCode)
+	} else {
+		s.logger.Info("Webhook dispatched successfully",
+			"webhook_url", dispatchReq.WebhookURL,
+			"streamer_key", streamerKey,
+			"response_time", result.ResponseTime)
+	}
+
+	return nil
 }
