@@ -1,0 +1,37 @@
+# HTTPS configuration example with Let's Encrypt
+[server]
+listen_addr = "0.0.0.0"
+port = 443
+
+[server.tls]
+enabled = true
+domains = ["your-domain.com"]  # Replace with your actual domain
+cert_dir = "data/acme_certs"
+
+[twitch]
+client_id = "your_twitch_client_id"
+client_secret = "your_twitch_client_secret"
+webhook_secret = "your_webhook_secret"
+
+[retry]
+max_attempts = 3
+initial_delay = "1s"
+max_delay = "5m"
+backoff_factor = 2.0
+
+[output]
+enabled = true
+file_path = "data/output.json"
+max_lines = 1000
+
+[telemetry]
+enabled = false
+
+# Example streamer configuration
+[streamers.example_streamer]
+user_id = "123456789"
+login = "example_streamer"
+webhook_url = "https://your-webhook-endpoint.com/webhook"
+tag_filter = ["English", "Gaming"]
+additional_tags = ["vip"]
+hmac_secret = "optional_hmac_secret"

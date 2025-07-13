@@ -1,0 +1,34 @@
+# Test configuration for development
+[server]
+listen_addr = "127.0.0.1"
+port = 8080
+
+[server.tls]
+enabled = false
+
+[twitch]
+client_id = "test_client_id"
+client_secret = "test_client_secret"
+webhook_secret = "test_webhook_secret"
+
+[retry]
+max_attempts = 3
+initial_delay = "1s"
+max_delay = "5m"
+backoff_factor = 2.0
+
+[output]
+enabled = true
+file_path = "data/output.json"
+max_lines = 1000
+
+[telemetry]
+enabled = false
+
+# Example streamer configuration
+[streamers.test_streamer]
+user_id = "123456789"
+login = "test_streamer"
+webhook_url = "https://httpbin.org/post"
+tag_filter = ["English"]
+additional_tags = ["test"]

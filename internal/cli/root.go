@@ -2,10 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/rmoriz/itsjustintv/internal/config"
+	"github.com/rmoriz/itsjustintv/internal/server"
 )
 
 var (
@@ -60,8 +62,16 @@ func runServer(cmd *cobra.Command, args []string) error {
 		fmt.Printf("TLS enabled: %t\n", cfg.Server.TLS.Enabled)
 	}
 
-	// TODO: Start the actual server (will be implemented in Milestone 2)
-	fmt.Println("Server starting... (placeholder - will be implemented in Milestone 2)")
+	// Setup logger
+	logger := setupLogger(verbose)
+	
+	// Create and start server
+	server := server.New(cfg, logger)
+	
+	ctx := cmd.Context()
+	if err := server.Start(ctx); err != nil {
+		return fmt.Errorf("server error: %w", err)
+	}
 	
 	return nil
 }
@@ -187,4 +197,19 @@ additional_tags = ["vip_streamer"]
 `
 
 	return os.WriteFile(path, []byte(example), 0644)
+}
+
+// setupLogger creates a structured logger
+func setupLogger(verbose bool) *slog.Logger {
+	level := slog.LevelInfo
+	if verbose {
+		level = slog.LevelDebug
+	}
+
+	opts := &slog.HandlerOptions{
+		Level: level,
+	}
+
+	handler := slog.NewTextHandler(os.Stdout, opts)
+	return slog.New(handler)
 }
