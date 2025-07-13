@@ -143,6 +143,85 @@ func (c *Client) GetUserInfo(ctx context.Context, userID string) (*UserInfo, err
 	return &response.Data[0], nil
 }
 
+// GetUserInfoByLogin retrieves user information for a given login name
+func (c *Client) GetUserInfoByLogin(ctx context.Context, login string) (*UserInfo, error) {
+	if err := c.ensureValidToken(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ensure valid token: %w", err)
+	}
+
+	url := fmt.Sprintf("https://api.twitch.tv/helix/users?login=%s", login)
+	
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	c.setAuthHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
+	}
+
+	var response struct {
+		Data []UserInfo `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(response.Data) == 0 {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	return &response.Data[0], nil
+}
+
+// GetID returns the user ID (implements config.TwitchUserInfo interface)
+func (u *UserInfo) GetID() string {
+	return u.ID
+}
+
+// GetLogin returns the user login (implements config.TwitchUserInfo interface)
+func (u *UserInfo) GetLogin() string {
+	return u.Login
+}
+
+// GetUserInfoByLoginForConfig is an adapter method that returns a config.TwitchUserInfo interface
+func (c *Client) GetUserInfoByLoginForConfig(ctx context.Context, login string) (config.TwitchUserInfo, error) {
+	userInfo, err := c.GetUserInfoByLogin(ctx, login)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &TwitchUserInfoForConfig{
+		ID:    userInfo.ID,
+		Login: userInfo.Login,
+	}, nil
+}
+
+// TwitchUserInfoForConfig represents basic user information for config resolution
+type TwitchUserInfoForConfig struct {
+	ID    string
+	Login string
+}
+
+// GetID returns the user ID
+func (u *TwitchUserInfoForConfig) GetID() string {
+	return u.ID
+}
+
+// GetLogin returns the user login
+func (u *TwitchUserInfoForConfig) GetLogin() string {
+	return u.Login
+}
+
 // GetChannelInfo retrieves channel information for a given broadcaster ID
 func (c *Client) GetChannelInfo(ctx context.Context, broadcasterID string) (*ChannelInfo, error) {
 	if err := c.ensureValidToken(ctx); err != nil {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -138,6 +139,46 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 
 	return config, nil
+}
+
+// ResolveStreamerUserIDs resolves missing user IDs for streamers using Twitch API
+func ResolveStreamerUserIDs(ctx context.Context, config *Config, twitchClient TwitchUserResolver) error {
+	for key, streamer := range config.Streamers {
+		// Skip if user_id is already set
+		if streamer.UserID != "" {
+			continue
+		}
+		
+		// Skip if login is not set
+		if streamer.Login == "" {
+			continue
+		}
+		
+		// Resolve user ID using login
+		userInfo, err := twitchClient.GetUserInfoByLoginForConfig(ctx, streamer.Login)
+		if err != nil {
+			return fmt.Errorf("failed to resolve user ID for streamer '%s' with login '%s': %w", key, streamer.Login, err)
+		}
+		
+		// Update the streamer config with resolved user ID
+		streamer.UserID = userInfo.GetID()
+		config.Streamers[key] = streamer
+		
+		fmt.Printf("Resolved user ID for streamer '%s': login='%s' -> user_id='%s'\n", key, streamer.Login, userInfo.GetID())
+	}
+	
+	return nil
+}
+
+// TwitchUserResolver interface for resolving user information
+type TwitchUserResolver interface {
+	GetUserInfoByLoginForConfig(ctx context.Context, login string) (TwitchUserInfo, error)
+}
+
+// TwitchUserInfo represents basic user information needed for resolution
+type TwitchUserInfo interface {
+	GetID() string
+	GetLogin() string
 }
 
 // applyEnvOverrides applies environment variable overrides to the configuration

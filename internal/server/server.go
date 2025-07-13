@@ -68,6 +68,12 @@ func (s *Server) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start Twitch client: %w", err)
 	}
 
+	// Resolve missing user IDs for streamers
+	if err := config.ResolveStreamerUserIDs(ctx, s.config, s.twitchClient); err != nil {
+		s.logger.Warn("Failed to resolve some streamer user IDs", "error", err)
+		// Don't fail startup, just log the warning
+	}
+
 	// Start enricher
 	if err := s.enricher.Start(); err != nil {
 		return fmt.Errorf("failed to start enricher: %w", err)
