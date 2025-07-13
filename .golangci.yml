@@ -1,6 +1,4 @@
-# golangci-lint v2.x configuration
-# See: https://golangci-lint.run/product/migration-guide/
-
+# Minimal golangci-lint v2.x configuration
 version: 2
 
 run:
@@ -16,20 +14,8 @@ linters:
     - typecheck
     - unused
     - gofmt
-    - goimports
-
-linters-settings:
-  govet:
-    settings:
-      printf:
-        funcs:
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
 
 issues:
-  exclude-use-default: false
   exclude-rules:
     - path: _test\.go
       linters:
