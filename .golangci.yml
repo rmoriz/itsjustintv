@@ -1,5 +1,5 @@
-# Working golangci-lint v2.x configuration
-version: 2
+# golangci-lint v2.x configuration
+version: "2"
 
 run:
   timeout: 5m
@@ -14,7 +14,7 @@ linters:
     - unused
 
 issues:
-  exclude-rules:
+  exclude:
     - path: _test\.go
       linters:
         - errcheck
