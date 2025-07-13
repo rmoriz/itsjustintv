@@ -24,7 +24,7 @@ func TestServerIntegrationHTTP(t *testing.T) {
 	// Create test configuration
 	cfg := config.DefaultConfig()
 	cfg.Server.ListenAddr = "127.0.0.1"
-	cfg.Server.Port = 0 // Use random available port
+	cfg.Server.Port = 18080 // Use fixed port for testing
 	cfg.Server.TLS.Enabled = false
 	cfg.Twitch.ClientID = "test_client_id"
 	cfg.Twitch.ClientSecret = "test_client_secret"
@@ -44,33 +44,6 @@ func TestServerIntegrationHTTP(t *testing.T) {
 
 	// Give server time to start
 	time.Sleep(200 * time.Millisecond)
-
-	// Get the actual port the server is listening on
-	// Since we used port 0, we need to extract it from the server
-	actualAddr := server.httpServer.Addr
-	if actualAddr == "127.0.0.1:0" {
-		// In real integration tests, we'd need a way to get the actual port
-		// For now, we'll test with a fixed port
-		cfg.Server.Port = 18080
-		cancel() // Stop the current server
-		
-		// Wait for it to stop
-		select {
-		case <-serverDone:
-		case <-time.After(2 * time.Second):
-		}
-
-		// Start new server with fixed port
-		server = New(cfg, logger)
-		ctx, cancel = context.WithCancel(context.Background())
-		defer cancel()
-		
-		go func() {
-			serverDone <- server.Start(ctx)
-		}()
-		
-		time.Sleep(200 * time.Millisecond)
-	}
 
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", cfg.Server.Port)
 

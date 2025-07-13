@@ -32,6 +32,8 @@ type Server struct {
 	webhookDispatcher *webhook.Dispatcher
 	retryManager     *retry.Manager
 	cacheManager     *cache.Manager
+	twitchClient     *twitch.Client
+	enricher         *twitch.Enricher
 }
 
 // New creates a new server instance
@@ -39,6 +41,8 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 	webhookDispatcher := webhook.NewDispatcher(cfg, logger)
 	cacheManager := cache.NewManager(logger, "data/cache.json", 2*time.Hour)
 	retryManager := retry.NewManager(cfg, logger, webhookDispatcher)
+	twitchClient := twitch.NewClient(cfg, logger)
+	enricher := twitch.NewEnricher(cfg, logger, twitchClient)
 
 	return &Server{
 		config:           cfg,
@@ -48,11 +52,23 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 		webhookDispatcher: webhookDispatcher,
 		retryManager:     retryManager,
 		cacheManager:     cacheManager,
+		twitchClient:     twitchClient,
+		enricher:         enricher,
 	}
 }
 
 // Start starts the HTTP server with optional HTTPS
 func (s *Server) Start(ctx context.Context) error {
+	// Start Twitch client
+	if err := s.twitchClient.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start Twitch client: %w", err)
+	}
+
+	// Start enricher
+	if err := s.enricher.Start(); err != nil {
+		return fmt.Errorf("failed to start enricher: %w", err)
+	}
+
 	// Start cache manager
 	if err := s.cacheManager.Start(); err != nil {
 		return fmt.Errorf("failed to start cache manager: %w", err)
@@ -135,6 +151,9 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	if err := s.cacheManager.Stop(); err != nil {
 		s.logger.Error("Cache manager stop error", "error", err)
+	}
+	if err := s.twitchClient.Stop(); err != nil {
+		s.logger.Error("Twitch client stop error", "error", err)
 	}
 
 	s.logger.Info("Server stopped gracefully")
@@ -381,6 +400,16 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 	}
 
 	payload := s.webhookDispatcher.CreatePayload(streamerKey, streamerConfig, eventDataMap)
+
+	// Enrich payload with metadata
+	enrichCtx, enrichCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer enrichCancel()
+
+	if err := s.enricher.EnrichPayload(enrichCtx, payload, streamerConfig); err != nil {
+		s.logger.Warn("Failed to enrich payload, continuing with basic data",
+			"error", err,
+			"streamer_key", streamerKey)
+	}
 
 	// Create dispatch request
 	dispatchReq := &webhook.DispatchRequest{
