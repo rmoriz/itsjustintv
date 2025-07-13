@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,21 +14,27 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 	"github.com/rmoriz/itsjustintv/internal/config"
+	"github.com/rmoriz/itsjustintv/internal/twitch"
+	"github.com/rmoriz/itsjustintv/internal/webhook"
 )
 
 // Server represents the HTTP server with optional HTTPS support
 type Server struct {
-	config     *config.Config
-	httpServer *http.Server
-	logger     *slog.Logger
-	certManager *autocert.Manager
+	config          *config.Config
+	httpServer      *http.Server
+	logger          *slog.Logger
+	certManager     *autocert.Manager
+	webhookValidator *webhook.Validator
+	twitchProcessor  *twitch.Processor
 }
 
 // New creates a new server instance
 func New(cfg *config.Config, logger *slog.Logger) *Server {
 	return &Server{
-		config: cfg,
-		logger: logger,
+		config:          cfg,
+		logger:          logger,
+		webhookValidator: webhook.NewValidator(cfg.Twitch.WebhookSecret),
+		twitchProcessor:  twitch.NewProcessor(cfg, logger),
 	}
 }
 
@@ -177,21 +184,99 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	s.logger.Debug("Health check requested", "remote_addr", r.RemoteAddr)
 }
 
-// handleTwitchWebhook handles Twitch EventSub webhooks (stub for now)
+// handleTwitchWebhook handles Twitch EventSub webhooks
 func (s *Server) handleTwitchWebhook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// TODO: Implement actual webhook processing in Milestone 3
-	s.logger.Info("Twitch webhook received (stub)", 
-		"remote_addr", r.RemoteAddr,
-		"content_length", r.ContentLength)
+	// Read the request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		s.logger.Error("Failed to read request body", "error", err)
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"received"}`))
+	// Extract EventSub headers
+	headers := twitch.EventSubHeaders{
+		MessageID:           r.Header.Get("Twitch-Eventsub-Message-Id"),
+		MessageRetry:        r.Header.Get("Twitch-Eventsub-Message-Retry"),
+		MessageType:         r.Header.Get("Twitch-Eventsub-Message-Type"),
+		MessageSignature:    r.Header.Get("Twitch-Eventsub-Message-Signature"),
+		MessageTimestamp:    r.Header.Get("Twitch-Eventsub-Message-Timestamp"),
+		SubscriptionType:    r.Header.Get("Twitch-Eventsub-Subscription-Type"),
+		SubscriptionVersion: r.Header.Get("Twitch-Eventsub-Subscription-Version"),
+	}
+
+	s.logger.Debug("Twitch webhook received",
+		"remote_addr", r.RemoteAddr,
+		"message_type", headers.MessageType,
+		"subscription_type", headers.SubscriptionType,
+		"message_id", headers.MessageID)
+
+	// Validate HMAC signature
+	if err := s.webhookValidator.ValidateSignature(body, headers.MessageSignature); err != nil {
+		s.logger.Warn("Invalid webhook signature",
+			"error", err,
+			"remote_addr", r.RemoteAddr,
+			"message_id", headers.MessageID)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Process the notification
+	processedEvent, err := s.twitchProcessor.ProcessNotification(headers, body)
+	if err != nil {
+		s.logger.Error("Failed to process notification",
+			"error", err,
+			"message_id", headers.MessageID)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Handle the response based on the processed event
+	switch processedEvent.Action {
+	case "respond":
+		// Webhook verification challenge
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(processedEvent.Challenge))
+		s.logger.Info("Webhook verification challenge responded",
+			"message_id", headers.MessageID)
+
+	case "process":
+		// Process the event (will be implemented in Milestone 4)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"processed"}`))
+		s.logger.Info("Event processed successfully",
+			"message_id", headers.MessageID,
+			"event_type", processedEvent.Type)
+
+	case "revoke":
+		// Unwanted subscription - respond with 410 Gone
+		w.WriteHeader(http.StatusGone)
+		s.logger.Info("Unwanted subscription, responded with 410 Gone",
+			"message_id", headers.MessageID)
+
+	case "ignore":
+		// Ignore the event
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ignored"}`))
+		s.logger.Debug("Event ignored",
+			"message_id", headers.MessageID,
+			"event_type", processedEvent.Type)
+
+	default:
+		s.logger.Error("Unknown action from processed event",
+			"action", processedEvent.Action,
+			"message_id", headers.MessageID)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 // handleRoot handles requests to the root path

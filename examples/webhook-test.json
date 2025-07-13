@@ -1,0 +1,25 @@
+{
+  "subscription": {
+    "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+    "status": "enabled",
+    "type": "stream.online",
+    "version": "1",
+    "condition": {
+      "broadcaster_user_id": "123456789"
+    },
+    "transport": {
+      "method": "webhook",
+      "callback": "https://example.com/webhooks/callback"
+    },
+    "created_at": "2025-07-13T01:00:00.000000000Z",
+    "cost": 1
+  },
+  "event": {
+    "id": "9001",
+    "broadcaster_user_id": "123456789",
+    "broadcaster_user_login": "teststreamer",
+    "broadcaster_user_name": "Test Streamer",
+    "type": "live",
+    "started_at": "2025-07-13T01:00:00.000000000Z"
+  }
+}
