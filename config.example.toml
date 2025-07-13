@@ -1,0 +1,58 @@
+# itsjustintv Configuration File
+# This is an example configuration with all available options documented
+
+[server]
+# Server listen address and port
+listen_addr = "0.0.0.0"
+port = 8080
+
+# TLS/HTTPS configuration (optional)
+[server.tls]
+enabled = false
+domains = ["example.com"]  # Required if TLS is enabled
+cert_dir = "data/acme_certs"
+
+[twitch]
+# Twitch application credentials (required)
+client_id = "your_twitch_client_id"
+client_secret = "your_twitch_client_secret"
+webhook_secret = "your_webhook_secret_for_hmac_validation"
+token_file = "data/tokens.json"
+
+# Retry configuration for failed webhook deliveries
+[retry]
+max_attempts = 3
+initial_delay = "1s"
+max_delay = "5m"
+backoff_factor = 2.0
+state_file = "data/retry_state.json"
+
+# File output configuration
+[output]
+enabled = true
+file_path = "data/output.json"
+max_lines = 1000
+
+# OpenTelemetry configuration (optional)
+[telemetry]
+enabled = false
+endpoint = "http://localhost:4318"
+service_name = "itsjustintv"
+service_version = "1.6.0"
+
+# Streamer configurations
+# Each streamer can have their own webhook URL and settings
+[streamers.example_streamer]
+user_id = "123456789"
+login = "example_streamer"
+webhook_url = "https://your-webhook-endpoint.com/webhook"
+tag_filter = ["English", "Gaming"]  # Optional: only notify for streams with these tags
+additional_tags = ["custom_tag"]    # Optional: add custom tags to webhook payload
+hmac_secret = "optional_hmac_secret_for_this_webhook"
+
+[streamers.another_streamer]
+user_id = "987654321"
+login = "another_streamer"
+webhook_url = "https://another-endpoint.com/webhook"
+# No tag_filter means all streams will trigger notifications
+additional_tags = ["vip_streamer"]
