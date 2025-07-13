@@ -342,7 +342,7 @@ func (s *Server) handleTwitchWebhook(w http.ResponseWriter, r *http.Request) {
 		// Ignore the event
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ignored"}`))
+		_, _ = w.Write([]byte(`{"status":"ignored"}`))
 		s.logger.Debug("Event ignored",
 			"message_id", headers.MessageID,
 			"event_type", processedEvent.Type)
@@ -364,7 +364,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("itsjustintv - Twitch EventSub webhook bridge\n"))
+	_, _ = w.Write([]byte("itsjustintv - Twitch EventSub webhook bridge\n"))
 }
 
 // processStreamEvent processes a stream.online event and dispatches webhooks
