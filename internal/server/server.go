@@ -24,18 +24,19 @@ import (
 
 // Server represents the HTTP server with optional HTTPS support
 type Server struct {
-	config           *config.Config
-	httpServer       *http.Server
-	logger           *slog.Logger
-	certManager      *autocert.Manager
-	webhookValidator *webhook.Validator
-	twitchProcessor  *twitch.Processor
-	webhookDispatcher *webhook.Dispatcher
-	retryManager     *retry.Manager
-	cacheManager     *cache.Manager
-	twitchClient     *twitch.Client
-	enricher         *twitch.Enricher
-	outputWriter     *output.Writer
+	config              *config.Config
+	httpServer          *http.Server
+	logger              *slog.Logger
+	certManager         *autocert.Manager
+	webhookValidator    *webhook.Validator
+	twitchProcessor     *twitch.Processor
+	webhookDispatcher   *webhook.Dispatcher
+	retryManager        *retry.Manager
+	cacheManager        *cache.Manager
+	twitchClient        *twitch.Client
+	enricher            *twitch.Enricher
+	outputWriter        *output.Writer
+	subscriptionManager *twitch.SubscriptionManager
 }
 
 // New creates a new server instance
@@ -46,18 +47,20 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 	twitchClient := twitch.NewClient(cfg, logger)
 	enricher := twitch.NewEnricher(cfg, logger, twitchClient)
 	outputWriter := output.NewWriter(cfg, logger)
+	subscriptionManager := twitch.NewSubscriptionManager(cfg, logger, twitchClient)
 
 	return &Server{
-		config:           cfg,
-		logger:           logger,
-		webhookValidator: webhook.NewValidator(cfg.Twitch.WebhookSecret),
-		twitchProcessor:  twitch.NewProcessor(cfg, logger),
-		webhookDispatcher: webhookDispatcher,
-		retryManager:     retryManager,
-		cacheManager:     cacheManager,
-		twitchClient:     twitchClient,
-		enricher:         enricher,
-		outputWriter:     outputWriter,
+		config:              cfg,
+		logger:              logger,
+		webhookValidator:    webhook.NewValidator(cfg.Twitch.WebhookSecret),
+		twitchProcessor:     twitch.NewProcessor(cfg, logger),
+		webhookDispatcher:   webhookDispatcher,
+		retryManager:        retryManager,
+		cacheManager:        cacheManager,
+		twitchClient:        twitchClient,
+		enricher:            enricher,
+		outputWriter:        outputWriter,
+		subscriptionManager: subscriptionManager,
 	}
 }
 
@@ -92,6 +95,11 @@ func (s *Server) Start(ctx context.Context) error {
 	// Start output writer
 	if err := s.outputWriter.Start(); err != nil {
 		return fmt.Errorf("failed to start output writer: %w", err)
+	}
+
+	// Start subscription manager
+	if err := s.subscriptionManager.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start subscription manager: %w", err)
 	}
 
 	// Setup routes

@@ -261,3 +261,8 @@ func validateConfig(config *Config) error {
 
 	return nil
 }
+
+// Validate validates the configuration
+func (config *Config) Validate() error {
+	return validateConfig(config)
+}

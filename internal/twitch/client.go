@@ -364,6 +364,11 @@ func (c *Client) setAuthHeaders(req *http.Request) {
 	req.Header.Set("Client-Id", c.config.Twitch.ClientID)
 }
 
+// ensureValidToken is exposed for use by SubscriptionManager
+func (c *Client) EnsureValidToken(ctx context.Context) error {
+	return c.ensureValidToken(ctx)
+}
+
 // loadToken loads the access token from disk
 func (c *Client) loadToken() error {
 	if _, err := os.Stat(c.config.Twitch.TokenFile); os.IsNotExist(err) {
