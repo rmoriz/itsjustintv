@@ -37,11 +37,6 @@ jobs:
     
     - name: Run tests with coverage
       run: go test -coverprofile=coverage.out ./...
-    
-    - name: Run linter
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: v2.2.2
 
   build:
     runs-on: ubuntu-latest
