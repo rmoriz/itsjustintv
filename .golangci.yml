@@ -1,4 +1,4 @@
-# Minimal golangci-lint v2.x configuration
+# Working golangci-lint v2.x configuration
 version: 2
 
 run:
@@ -11,7 +11,6 @@ linters:
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - unused
     - gofmt
 
