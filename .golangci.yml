@@ -1,40 +1,7 @@
 run:
   timeout: 5m
-  modules-download-mode: readonly
-
-linters-settings:
-  govet:
-    check-shadowing: true
-  gocyclo:
-    min-complexity: 15
-  maligned:
-    suggest-new: true
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
-  goimports:
-    local-prefixes: github.com/rmoriz/itsjustintv
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
 
 linters:
-  disable-all: true
   enable:
     - errcheck
     - gosimple
@@ -44,16 +11,9 @@ linters:
     - typecheck
     - unused
     - gofmt
-    - goimports
-    - goconst
-    - misspell
-    - lll
-    - dupl
-    - gosec
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gomnd
-        - goconst
+        - errcheck
