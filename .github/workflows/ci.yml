@@ -36,11 +36,6 @@ jobs:
     - name: Run tests with coverage
       run: go test -coverprofile=coverage.out ./...
     
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.out
-    
     - name: Run linter
       uses: golangci/golangci-lint-action@v8
       with:
