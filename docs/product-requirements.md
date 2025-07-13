@@ -189,7 +189,10 @@ itsjustintv --config ./custom.toml
 ### 5.2 Tagged Releases
 
 - On Git tag (e.g. `v1.2.3`):
-  - Static binary for `linux-amd64` (musl)
+  - Static binaries for multiple platforms:
+    - `linux-amd64` (musl)
+    - `linux-arm64` (musl) 
+    - `darwin-aarch64` (macOS Apple Silicon)
   - Docker image with tags: `v1.2.3`, `latest`
   - Create GitHub release
 

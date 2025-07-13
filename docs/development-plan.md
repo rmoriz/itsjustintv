@@ -330,7 +330,10 @@
 
 3. **Release Automation**
 
-   - [ ] Static binary build for linux-amd64 (musl)
+   - [ ] Static binary builds for multiple platforms:
+     - [ ] linux-amd64 (musl)
+     - [ ] linux-arm64 (musl) 
+     - [ ] darwin-aarch64 (macOS Apple Silicon)
    - [ ] GitHub release creation on tags
    - [ ] Artifact upload and release notes
    - [ ] Version embedding in binaries
@@ -345,7 +348,7 @@
 
 - Automated CI/CD pipeline
 - Docker images on GHCR
-- Static binary releases
+- Multi-platform static binary releases (Linux amd64/arm64, macOS aarch64)
 - Automated release management
 
 ---

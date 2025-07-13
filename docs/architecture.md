@@ -422,7 +422,7 @@ type CacheEntry struct {
                                       ┌─────────────┐
                                       │   Static    │
                                       │   Binary    │
-                                      │(linux-amd64)│
+                                      │(multi-arch) │
                                       └─────────────┘
 ```
 
@@ -436,10 +436,13 @@ type CacheEntry struct {
 
 **On Git tag push (e.g., `v1.2.3`):**
 - Run `go test` and linter
-- Build static binary for `linux-amd64` (musl)
+- Build static binaries for multiple platforms:
+  - `linux-amd64` (musl)
+  - `linux-arm64` (musl)
+  - `darwin-aarch64` (macOS Apple Silicon)
 - Build Alpine-based Docker image
 - Push Docker image with tags: `v1.2.3` and `latest`
-- Create GitHub release with binary artifacts
+- Create GitHub release with multi-platform binary artifacts
 - Generate release notes from commits since last tag
 
 ---
