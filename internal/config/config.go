@@ -106,7 +106,7 @@ func DefaultConfig() *Config {
 		Telemetry: TelemetryConfig{
 			Enabled:        false,
 			ServiceName:    "itsjustintv",
-			ServiceVersion: "1.6.0",
+			ServiceVersion: "0.1.0",
 		},
 		Streamers: make(map[string]StreamerConfig),
 	}
