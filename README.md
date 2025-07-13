@@ -19,6 +19,55 @@ A configurable, self-hosted Go-based service that receives Twitch EventSub HTTP 
 
 ### Installation
 
+#### Using Just (Recommended for Development)
+
+This project includes a `justfile` for easy development workflow management. [Just](https://github.com/casey/just) is a command runner similar to `make` but with a more modern syntax.
+
+**Install Just:**
+
+```bash
+# macOS
+brew install just
+
+# Linux/macOS (using installer script)
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+
+# Or download from releases: https://github.com/casey/just/releases
+```
+
+**Common development commands:**
+
+```bash
+# Show all available commands
+just
+
+# Build the application
+just build
+
+# Run with example config
+just run
+
+# Run tests
+just test
+
+# Run tests with coverage
+just test-coverage
+
+# Format code and run linter
+just check
+
+# Quick development cycle (format, test, build, run)
+just dev
+
+# Build for multiple platforms
+just build-all
+
+# Create config.toml from example
+just config
+```
+
+#### Manual Installation
+
 Download the latest binary for your platform from the [releases page](https://github.com/rmoriz/itsjustintv/releases):
 
 - **Linux amd64**: `itsjustintv-linux-amd64`
