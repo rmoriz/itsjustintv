@@ -247,7 +247,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	
 	response := `{"status":"healthy","service":"itsjustintv","timestamp":"` + time.Now().UTC().Format(time.RFC3339) + `"}`
-	w.Write([]byte(response))
+	_, _ = w.Write([]byte(response))
 	
 	s.logger.Debug("Health check requested", "remote_addr", r.RemoteAddr)
 }
@@ -311,7 +311,7 @@ func (s *Server) handleTwitchWebhook(w http.ResponseWriter, r *http.Request) {
 		// Webhook verification challenge
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(processedEvent.Challenge))
+		_, _ = w.Write([]byte(processedEvent.Challenge))
 		s.logger.Info("Webhook verification challenge responded",
 			"message_id", headers.MessageID)
 
@@ -327,7 +327,7 @@ func (s *Server) handleTwitchWebhook(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"processed"}`))
+		_, _ = w.Write([]byte(`{"status":"processed"}`))
 		s.logger.Info("Event processed successfully",
 			"message_id", headers.MessageID,
 			"event_type", processedEvent.Type)
