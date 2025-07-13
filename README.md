@@ -1,6 +1,6 @@
 # itsjustintv
 
-![itsjustintv Logo](docs/itsjustintv-logo.jpeg)
+![itsjustintv Logo](docs/itsjustintv-logo.png)
 
 A configurable, self-hosted Go-based service that receives Twitch EventSub HTTP webhooks and notifies via downstream webhooks or file output when specified streamers go live.
 
