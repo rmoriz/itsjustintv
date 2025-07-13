@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"github.com/rmoriz/itsjustintv/internal/cache"
 	"github.com/rmoriz/itsjustintv/internal/config"
+	"github.com/rmoriz/itsjustintv/internal/output"
 	"github.com/rmoriz/itsjustintv/internal/retry"
 	"github.com/rmoriz/itsjustintv/internal/twitch"
 	"github.com/rmoriz/itsjustintv/internal/webhook"
@@ -34,6 +35,7 @@ type Server struct {
 	cacheManager     *cache.Manager
 	twitchClient     *twitch.Client
 	enricher         *twitch.Enricher
+	outputWriter     *output.Writer
 }
 
 // New creates a new server instance
@@ -43,6 +45,7 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 	retryManager := retry.NewManager(cfg, logger, webhookDispatcher)
 	twitchClient := twitch.NewClient(cfg, logger)
 	enricher := twitch.NewEnricher(cfg, logger, twitchClient)
+	outputWriter := output.NewWriter(cfg, logger)
 
 	return &Server{
 		config:           cfg,
@@ -54,6 +57,7 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 		cacheManager:     cacheManager,
 		twitchClient:     twitchClient,
 		enricher:         enricher,
+		outputWriter:     outputWriter,
 	}
 }
 
@@ -77,6 +81,11 @@ func (s *Server) Start(ctx context.Context) error {
 	// Start retry manager
 	if err := s.retryManager.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start retry manager: %w", err)
+	}
+
+	// Start output writer
+	if err := s.outputWriter.Start(); err != nil {
+		return fmt.Errorf("failed to start output writer: %w", err)
 	}
 
 	// Setup routes
@@ -154,6 +163,9 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	if err := s.twitchClient.Stop(); err != nil {
 		s.logger.Error("Twitch client stop error", "error", err)
+	}
+	if err := s.outputWriter.Stop(); err != nil {
+		s.logger.Error("Output writer stop error", "error", err)
 	}
 
 	s.logger.Info("Server stopped gracefully")
@@ -426,7 +438,10 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 
 	result := s.webhookDispatcher.Dispatch(ctx, dispatchReq)
 
+	// Write to output file
+	errorMsg := ""
 	if !result.Success {
+		errorMsg = result.Error
 		// Add to retry queue
 		s.retryManager.AddRequest(dispatchReq)
 		s.logger.Warn("Initial webhook dispatch failed, added to retry queue",
@@ -439,6 +454,11 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 			"webhook_url", dispatchReq.WebhookURL,
 			"streamer_key", streamerKey,
 			"response_time", result.ResponseTime)
+	}
+
+	// Write payload to output file
+	if err := s.outputWriter.WritePayload(*payload, result.Success, errorMsg); err != nil {
+		s.logger.Warn("Failed to write payload to output file", "error", err)
 	}
 
 	return nil
