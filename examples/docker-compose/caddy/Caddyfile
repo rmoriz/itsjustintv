@@ -1,0 +1,57 @@
+# Caddy configuration for itsjustintv reverse proxy
+# This configuration provides automatic HTTPS with Let's Encrypt
+
+# Replace localhost with your actual domain for production
+# Example: twitch-alerts.example.com
+{$DOMAIN:localhost} {
+    # Reverse proxy to itsjustintv service
+    reverse_proxy itsjustintv:8080
+    
+    # Security headers
+    header {
+        # Security headers
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        
+        # Remove server header
+        -Server
+    }
+    
+    # Logging
+    log {
+        output file /data/access.log {
+            roll_size 100MB
+            roll_keep 10
+            roll_keep_for 720h
+        }
+    }
+    
+    # Compression
+    encode gzip zstd
+    
+    # Rate limiting (optional - adjust as needed)
+    # rate_limit {
+    #     zone static_api {
+    #         key {remote_host}
+    #         events 100
+    #         window 1m
+    #     }
+    # }
+    
+    # Handle specific paths
+    handle_path /twitch* {
+        reverse_proxy itsjustintv:8080
+    }
+    
+    # Health check endpoint
+    handle /health {
+        reverse_proxy itsjustintv:8080
+    }
+}
+
+# Redirect HTTP to HTTPS
+http:// {$DOMAIN:localhost} {
+    redir https://{host}{uri} permanent
+}

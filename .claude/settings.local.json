@@ -12,7 +12,8 @@
       "Bash(go get:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
