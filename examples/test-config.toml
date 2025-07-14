@@ -10,6 +10,8 @@ enabled = false
 client_id = "test_client_id"
 client_secret = "test_client_secret"
 webhook_secret = "test_webhook_secret"
+# For local testing, you might use ngrok or similar
+# incoming_webhook_url = "https://your-ngrok-url.ngrok.io/twitch"
 
 [retry]
 max_attempts = 3

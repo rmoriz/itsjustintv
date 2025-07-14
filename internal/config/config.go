@@ -37,10 +37,11 @@ type ServerConfig struct {
 
 // TwitchConfig holds Twitch API configuration
 type TwitchConfig struct {
-	ClientID      string `toml:"client_id"`
-	ClientSecret  string `toml:"client_secret"`
-	WebhookSecret string `toml:"webhook_secret"`
-	TokenFile     string `toml:"token_file"`
+	ClientID          string `toml:"client_id"`
+	ClientSecret      string `toml:"client_secret"`
+	WebhookSecret     string `toml:"webhook_secret"`
+	TokenFile         string `toml:"token_file"`
+	IncomingWebhookURL string `toml:"incoming_webhook_url"`
 }
 
 // StreamerConfig holds individual streamer configuration
@@ -106,7 +107,8 @@ func DefaultConfig() *Config {
 			},
 		},
 		Twitch: TwitchConfig{
-			TokenFile: "data/tokens.json",
+			TokenFile:          "data/tokens.json",
+			IncomingWebhookURL: "",
 		},
 		Retry: RetryConfig{
 			MaxAttempts:   3,

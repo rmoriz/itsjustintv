@@ -211,6 +211,11 @@ client_id = "your_twitch_client_id"
 client_secret = "your_twitch_client_secret"
 webhook_secret = "your_webhook_secret_for_hmac_validation"
 token_file = "data/tokens.json"
+
+# Incoming webhook URL for Twitch EventSub subscriptions
+# This is the URL Twitch will send webhook notifications to
+# If not specified, it will be constructed from server configuration
+incoming_webhook_url = "https://your-domain.com/twitch"
 ```
 
 ### Streamer Configuration

@@ -12,6 +12,8 @@ cert_dir = "data/acme_certs"
 client_id = "your_twitch_client_id"
 client_secret = "your_twitch_client_secret"
 webhook_secret = "your_webhook_secret"
+# Use the HTTPS endpoint for incoming webhooks
+incoming_webhook_url = "https://your-domain.com/twitch"
 
 [retry]
 max_attempts = 3

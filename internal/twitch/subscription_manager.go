@@ -47,8 +47,11 @@ type SubscriptionResponse struct {
 
 // NewSubscriptionManager creates a new subscription manager
 func NewSubscriptionManager(cfg *config.Config, logger *slog.Logger, client *Client) *SubscriptionManager {
-	// Build callback URL based on server configuration
-	callbackURL := buildCallbackURL(cfg)
+	// Use incoming_webhook_url if specified, otherwise build from server config
+	callbackURL := cfg.Twitch.IncomingWebhookURL
+	if callbackURL == "" {
+		callbackURL = buildCallbackURL(cfg)
+	}
 
 	return &SubscriptionManager{
 		config:      cfg,
