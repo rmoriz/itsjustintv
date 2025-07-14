@@ -33,10 +33,10 @@ type ServerConfig struct {
 
 // TwitchConfig holds Twitch API configuration
 type TwitchConfig struct {
-	ClientID     string `toml:"client_id"`
-	ClientSecret string `toml:"client_secret"`
+	ClientID      string `toml:"client_id"`
+	ClientSecret  string `toml:"client_secret"`
 	WebhookSecret string `toml:"webhook_secret"`
-	TokenFile    string `toml:"token_file"`
+	TokenFile     string `toml:"token_file"`
 }
 
 // StreamerConfig holds individual streamer configuration
@@ -67,9 +67,9 @@ type OutputConfig struct {
 
 // TelemetryConfig holds OpenTelemetry configuration
 type TelemetryConfig struct {
-	Enabled bool   `toml:"enabled"`
-	Endpoint string `toml:"endpoint"`
-	ServiceName string `toml:"service_name"`
+	Enabled        bool   `toml:"enabled"`
+	Endpoint       string `toml:"endpoint"`
+	ServiceName    string `toml:"service_name"`
 	ServiceVersion string `toml:"service_version"`
 }
 
@@ -148,25 +148,25 @@ func ResolveStreamerUserIDs(ctx context.Context, config *Config, twitchClient Tw
 		if streamer.UserID != "" {
 			continue
 		}
-		
+
 		// Skip if login is not set
 		if streamer.Login == "" {
 			continue
 		}
-		
+
 		// Resolve user ID using login
 		userInfo, err := twitchClient.GetUserInfoByLoginForConfig(ctx, streamer.Login)
 		if err != nil {
 			return fmt.Errorf("failed to resolve user ID for streamer '%s' with login '%s': %w", key, streamer.Login, err)
 		}
-		
+
 		// Update the streamer config with resolved user ID
 		streamer.UserID = userInfo.GetID()
 		config.Streamers[key] = streamer
-		
+
 		fmt.Printf("Resolved user ID for streamer '%s': login='%s' -> user_id='%s'\n", key, streamer.Login, userInfo.GetID())
 	}
-	
+
 	return nil
 }
 
