@@ -112,9 +112,21 @@ func (p *Processor) handleStreamOnline(notification EventSubNotification) (*Proc
 		}, nil
 	}
 
+	configKey := findStreamerConfigKey(p.config.Streamers, streamEvent.BroadcasterUserID, streamEvent.BroadcasterUserLogin)
 	p.logger.Info("Processing stream online event for configured streamer",
 		"streamer_login", streamEvent.BroadcasterUserLogin,
-		"config_key", findStreamerConfigKey(p.config.Streamers, streamEvent.BroadcasterUserID, streamEvent.BroadcasterUserLogin))
+		"config_key", configKey)
+
+	// Check tag filtering according to PRD requirements
+	if len(streamerConfig.TagFilter) > 0 {
+		// Get channel info to check Twitch-provided tags
+		// Note: We need to get this from the actual Twitch API since EventSub doesn't provide tags
+		// For now, we'll allow processing and let the enricher handle tag filtering
+		// This matches the current architecture where enrichment happens after processing
+		p.logger.Debug("Tag filter configured, will check during enrichment",
+			"streamer_login", streamEvent.BroadcasterUserLogin,
+			"tag_filter", streamerConfig.TagFilter)
+	}
 
 	return &ProcessedEvent{
 		Type:   "stream.online",

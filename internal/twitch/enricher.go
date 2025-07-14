@@ -80,11 +80,23 @@ func (e *Enricher) EnrichPayload(ctx context.Context, payload *webhook.WebhookPa
 	channelInfo, err := e.client.GetChannelInfo(ctx, payload.StreamerID)
 	if err != nil {
 		e.logger.Warn("Failed to get channel info", "error", err, "streamer_id", payload.StreamerID)
+		// Continue with basic data, tag filtering will be skipped
 	} else {
-		// Merge dynamic tags with static additional tags
+		// Apply tag filtering according to PRD requirements
+		if len(streamerConfig.TagFilter) > 0 {
+			if !e.checkTagFilter(channelInfo.Tags, streamerConfig.TagFilter) {
+				e.logger.Info("Stream blocked by tag filter",
+					"streamer_login", payload.StreamerLogin,
+					"twitch_tags", channelInfo.Tags,
+					"tag_filter", streamerConfig.TagFilter)
+				return fmt.Errorf("stream blocked by tag filter")
+			}
+		}
+
+		// Merge dynamic tags (Twitch-provided) with static additional tags
 		allTags := make([]string, 0, len(channelInfo.Tags)+len(payload.AdditionalTags))
-		allTags = append(allTags, channelInfo.Tags...)
-		allTags = append(allTags, payload.AdditionalTags...)
+		allTags = append(allTags, channelInfo.Tags...) // Twitch-provided tags
+		allTags = append(allTags, payload.AdditionalTags...) // Static additional tags
 		payload.Tags = allTags
 
 		// Set language from channel info
@@ -107,6 +119,24 @@ func (e *Enricher) EnrichPayload(ctx context.Context, payload *webhook.WebhookPa
 		"has_image", payload.Image != nil)
 
 	return nil
+}
+
+// checkTagFilter checks if any Twitch-provided tag matches the filter
+func (e *Enricher) checkTagFilter(twitchTags []string, tagFilter []string) bool {
+	if len(tagFilter) == 0 {
+		return true // No filter, allow all
+	}
+
+	// Check each Twitch-provided tag against the filter (case-insensitive exact match)
+	for _, twitchTag := range twitchTags {
+		for _, filterTag := range tagFilter {
+			if strings.EqualFold(twitchTag, filterTag) {
+				return true // Found a match
+			}
+		}
+	}
+
+	return false // No matching tags found
 }
 
 // getProfileImage fetches and caches a profile image

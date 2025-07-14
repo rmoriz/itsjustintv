@@ -585,11 +585,18 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 
 	payload := s.webhookDispatcher.CreatePayload(streamerKey, streamerConfig, eventDataMap)
 
-	// Enrich payload with metadata
+	// Enrich payload with metadata and apply tag filtering
 	enrichCtx, enrichCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer enrichCancel()
 
 	if err := s.enricher.EnrichPayload(enrichCtx, payload, streamerConfig); err != nil {
+		if err.Error() == "stream blocked by tag filter" {
+			s.logger.Info("Stream blocked by tag filter, skipping webhook dispatch",
+				"streamer_key", streamerKey,
+				"streamer_login", streamEvent.BroadcasterUserLogin)
+			return nil
+		}
+		
 		s.logger.Warn("Failed to enrich payload, continuing with basic data",
 			"error", err,
 			"streamer_key", streamerKey)
