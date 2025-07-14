@@ -43,6 +43,7 @@ This file contains development guidelines and project-specific information for w
 - **Tags**: `v1.2.3` format for releases
 - **Messages**: Always in English
 - **AI Commits**: Include `AI-Generated-By: <model> via Claude`
+- **Co-Authored-By**: Do not add Co-Authored-By to git commit messages
 
 ### Pre-Commit Checklist
 1. ✅ Run all tests: `go test -v ./...`

@@ -602,11 +602,32 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 			"streamer_key", streamerKey)
 	}
 
+	// Determine webhook URL and secret
+	webhookURL := streamerConfig.WebhookURL
+	hmacSecret := streamerConfig.HMACSecret
+	
+	// Use global webhook if streamer-specific URL is not provided and global is enabled
+	if webhookURL == "" && s.config.GlobalWebhook.Enabled && s.config.GlobalWebhook.URL != "" {
+		webhookURL = s.config.GlobalWebhook.URL
+		hmacSecret = s.config.GlobalWebhook.HMACSecret
+		s.logger.Debug("Using global webhook configuration",
+			"streamer_key", streamerKey,
+			"webhook_url", webhookURL)
+	}
+	
+	// Validate webhook URL
+	if webhookURL == "" {
+		s.logger.Error("No webhook URL configured for streamer",
+			"streamer_key", streamerKey,
+			"has_global_webhook", s.config.GlobalWebhook.Enabled)
+		return fmt.Errorf("no webhook URL configured for streamer: %s", streamerKey)
+	}
+
 	// Create dispatch request
 	dispatchReq := &webhook.DispatchRequest{
-		WebhookURL:  streamerConfig.WebhookURL,
+		WebhookURL:  webhookURL,
 		Payload:     *payload,
-		HMACSecret:  streamerConfig.HMACSecret,
+		HMACSecret:  hmacSecret,
 		StreamerKey: streamerKey,
 		Attempt:     1,
 	}

@@ -12,12 +12,13 @@ import (
 
 // Config represents the main configuration structure
 type Config struct {
-	Server    ServerConfig              `toml:"server"`
-	Twitch    TwitchConfig              `toml:"twitch"`
-	Streamers map[string]StreamerConfig `toml:"streamers"`
-	Retry     RetryConfig               `toml:"retry"`
-	Output    OutputConfig              `toml:"output"`
-	Telemetry TelemetryConfig           `toml:"telemetry"`
+	Server     ServerConfig              `toml:"server"`
+	Twitch     TwitchConfig              `toml:"twitch"`
+	Streamers  map[string]StreamerConfig `toml:"streamers"`
+	Retry      RetryConfig               `toml:"retry"`
+	Output     OutputConfig              `toml:"output"`
+	Telemetry  TelemetryConfig           `toml:"telemetry"`
+	GlobalWebhook GlobalWebhookConfig    `toml:"global_webhook"`
 	
 	// Internal fields (not loaded from TOML)
 	configPath string
@@ -76,6 +77,14 @@ type TelemetryConfig struct {
 	ServiceVersion string `toml:"service_version"`
 }
 
+// GlobalWebhookConfig holds global webhook configuration
+// This provides a fallback webhook URL when streamer-specific URLs are not provided
+type GlobalWebhookConfig struct {
+	Enabled bool   `toml:"enabled"`
+	URL     string `toml:"url"`
+	HMACSecret string `toml:"hmac_secret"`
+}
+
 // DefaultConfig returns a configuration with sensible defaults
 func DefaultConfig() *Config {
 	return &Config{
@@ -111,6 +120,11 @@ func DefaultConfig() *Config {
 			Enabled:        false,
 			ServiceName:    "itsjustintv",
 			ServiceVersion: "0.1.0",
+		},
+		GlobalWebhook: GlobalWebhookConfig{
+			Enabled: false,
+			URL:     "",
+			HMACSecret: "",
 		},
 		Streamers: make(map[string]StreamerConfig),
 	}
@@ -255,6 +269,17 @@ func validateConfig(config *Config) error {
 		return fmt.Errorf("retry.backoff_factor must be greater than 1.0")
 	}
 
+	// Validate global webhook configuration
+	if config.GlobalWebhook.Enabled {
+		if config.GlobalWebhook.URL == "" {
+			return fmt.Errorf("global_webhook.url is required when global_webhook.enabled is true")
+		}
+		// Basic URL validation
+		if !isValidURL(config.GlobalWebhook.URL) {
+			return fmt.Errorf("global_webhook.url must be a valid URL")
+		}
+	}
+
 	// Ensure data directories exist
 	dataDirs := []string{
 		filepath.Dir(config.Twitch.TokenFile),
@@ -271,6 +296,14 @@ func validateConfig(config *Config) error {
 	}
 
 	return nil
+}
+
+// isValidURL performs basic URL validation
+func isValidURL(url string) bool {
+	if url == "" {
+		return false
+	}
+	return len(url) > 7 && (url[:7] == "http://" || url[:8] == "https://")
 }
 
 // Validate validates the configuration
