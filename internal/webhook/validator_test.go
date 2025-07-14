@@ -77,7 +77,7 @@ func TestValidateSignatureWithCorrectSignature(t *testing.T) {
 	payload := []byte(`{"test":"data"}`)
 
 	// Generate the correct signature
-	expectedSignature := validator.GenerateSignature(payload)
+	expectedSignature := validator.GenerateSignature(payload, "SHA-256")
 
 	// Test with the correct signature
 	err := validator.ValidateSignature(payload, expectedSignature)
@@ -103,27 +103,45 @@ func TestGenerateSignature(t *testing.T) {
 	validator := NewValidator(secret)
 	payload := []byte(`{"test":"data"}`)
 
-	signature := validator.GenerateSignature(payload)
+	tests := []struct {
+		name      string
+		algorithm string
+		prefix    string
+	}{
+		{"SHA-1", "SHA-1", "sha1="},
+		{"SHA-256", "SHA-256", "sha256="},
+		{"SHA-512", "SHA-512", "sha512="},
+		{"default", "", "sha256="},
+	}
 
-	assert.NotEmpty(t, signature)
-	assert.True(t, len(signature) > 7) // Should have "sha256=" prefix plus hex
-	assert.Contains(t, signature, "sha256=")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			signature := validator.GenerateSignature(payload, tt.algorithm)
 
-	// Test that the same payload generates the same signature
-	signature2 := validator.GenerateSignature(payload)
-	assert.Equal(t, signature, signature2)
+			assert.NotEmpty(t, signature)
+			assert.True(t, len(signature) > len(tt.prefix))
+			assert.Contains(t, signature, tt.prefix)
 
-	// Test that different payloads generate different signatures
-	differentPayload := []byte(`{"different":"data"}`)
-	differentSignature := validator.GenerateSignature(differentPayload)
-	assert.NotEqual(t, signature, differentSignature)
+			// Test that the same payload generates the same signature
+			signature2 := validator.GenerateSignature(payload, tt.algorithm)
+			assert.Equal(t, signature, signature2)
+
+			// Test that different payloads generate different signatures
+			differentPayload := []byte(`{"different":"data"}`)
+			differentSignature := validator.GenerateSignature(differentPayload, tt.algorithm)
+			assert.NotEqual(t, signature, differentSignature)
+		})
+	}
 }
 
 func TestGenerateSignatureNoSecret(t *testing.T) {
 	validator := NewValidator("")
 	payload := []byte(`{"test":"data"}`)
 
-	signature := validator.GenerateSignature(payload)
+	signature := validator.GenerateSignature(payload, "SHA-256")
+	assert.Empty(t, signature)
+
+	signature = validator.GenerateSignature(payload, "")
 	assert.Empty(t, signature)
 }
 
@@ -139,20 +157,26 @@ func TestSignatureRoundTrip(t *testing.T) {
 		[]byte(`{"complex":{"nested":{"data":["array","values"],"number":42}}}`),
 	}
 
-	for i, payload := range testPayloads {
-		t.Run("payload_"+string(rune('0'+i)), func(t *testing.T) {
-			// Generate signature
-			signature := validator.GenerateSignature(payload)
-			require.NotEmpty(t, signature)
+	algorithms := []string{"SHA-1", "SHA-256", "SHA-512"}
 
-			// Validate the generated signature
-			err := validator.ValidateSignature(payload, signature)
-			assert.NoError(t, err)
+	for _, algorithm := range algorithms {
+		t.Run("algorithm_"+algorithm, func(t *testing.T) {
+			for i, payload := range testPayloads {
+				t.Run("payload_"+string(rune('0'+i)), func(t *testing.T) {
+					// Generate signature
+					signature := validator.GenerateSignature(payload, algorithm)
+					require.NotEmpty(t, signature)
 
-			// Test with modified payload (should fail)
-			modifiedPayload := append(payload, byte(' '))
-			err = validator.ValidateSignature(modifiedPayload, signature)
-			assert.Error(t, err)
+					// Validate the generated signature
+					err := validator.ValidateSignature(payload, signature)
+					assert.NoError(t, err)
+
+					// Test with modified payload (should fail)
+					modifiedPayload := append(payload, byte(' '))
+					err = validator.ValidateSignature(modifiedPayload, signature)
+					assert.Error(t, err)
+				})
+			}
 		})
 	}
 }

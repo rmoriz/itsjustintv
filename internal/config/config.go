@@ -45,12 +45,14 @@ type TwitchConfig struct {
 
 // StreamerConfig holds individual streamer configuration
 type StreamerConfig struct {
-	UserID         string   `toml:"user_id"`
-	Login          string   `toml:"login"`
-	WebhookURL     string   `toml:"webhook_url"`
-	TagFilter      []string `toml:"tag_filter"`
-	AdditionalTags []string `toml:"additional_tags"`
-	HMACSecret     string   `toml:"hmac_secret"`
+	UserID              string   `toml:"user_id"`
+	Login               string   `toml:"login"`
+	TargetWebhookURL    string   `toml:"target_webhook_url"`
+	TagFilter           []string `toml:"tag_filter"`
+	AdditionalTags      []string `toml:"additional_tags"`
+	TargetWebhookSecret string   `toml:"target_webhook_secret"`
+	TargetWebhookHeader string   `toml:"target_webhook_header"`
+	TargetWebhookHashing string  `toml:"target_webhook_hashing"`
 }
 
 // RetryConfig holds retry mechanism configuration
@@ -80,9 +82,11 @@ type TelemetryConfig struct {
 // GlobalWebhookConfig holds global webhook configuration
 // This provides a fallback webhook URL when streamer-specific URLs are not provided
 type GlobalWebhookConfig struct {
-	Enabled bool   `toml:"enabled"`
-	URL     string `toml:"url"`
-	HMACSecret string `toml:"hmac_secret"`
+	Enabled               bool   `toml:"enabled"`
+	URL                   string `toml:"url"`
+	TargetWebhookSecret   string `toml:"target_webhook_secret"`
+	TargetWebhookHeader   string `toml:"target_webhook_header"`
+	TargetWebhookHashing  string `toml:"target_webhook_hashing"`
 }
 
 // DefaultConfig returns a configuration with sensible defaults
@@ -122,9 +126,11 @@ func DefaultConfig() *Config {
 			ServiceVersion: "0.1.0",
 		},
 		GlobalWebhook: GlobalWebhookConfig{
-			Enabled: false,
-			URL:     "",
-			HMACSecret: "",
+			Enabled:               false,
+			URL:                   "",
+			TargetWebhookSecret:   "",
+			TargetWebhookHeader:   "X-Hub-Signature-256",
+			TargetWebhookHashing:  "SHA-256",
 		},
 		Streamers: make(map[string]StreamerConfig),
 	}

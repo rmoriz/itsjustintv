@@ -29,6 +29,6 @@ enabled = false
 [streamers.test_streamer]
 user_id = "123456789"
 login = "test_streamer"
-webhook_url = "https://httpbin.org/post"
+target_webhook_url = "https://httpbin.org/post"
 tag_filter = ["English"]
 additional_tags = ["test"]

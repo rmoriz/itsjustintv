@@ -2,9 +2,12 @@ package webhook
 
 import (
 	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"strings"
 )
 
@@ -20,17 +23,35 @@ func NewValidator(secret string) *Validator {
 	}
 }
 
-// ValidateSignature validates the HMAC-SHA256 signature of a webhook payload
+// ValidateSignature validates the HMAC signature of a webhook payload
 func (v *Validator) ValidateSignature(payload []byte, signature string) error {
 	if v.secret == "" {
 		return fmt.Errorf("webhook secret not configured")
 	}
 
-	// Remove "sha256=" prefix if present
-	signature = strings.TrimPrefix(signature, "sha256=")
+	// Determine algorithm from signature prefix
+	var hashFunc func() hash.Hash
+	var prefix string
+	
+	if strings.HasPrefix(signature, "sha1=") {
+		prefix = "sha1="
+		hashFunc = sha1.New
+	} else if strings.HasPrefix(signature, "sha256=") {
+		prefix = "sha256="
+		hashFunc = sha256.New
+	} else if strings.HasPrefix(signature, "sha512=") {
+		prefix = "sha512="
+		hashFunc = sha512.New
+	} else {
+		// Default to SHA-256 if no prefix found
+		hashFunc = sha256.New
+	}
+
+	// Remove prefix if present
+	signature = strings.TrimPrefix(signature, prefix)
 
 	// Calculate expected signature
-	mac := hmac.New(sha256.New, []byte(v.secret))
+	mac := hmac.New(hashFunc, []byte(v.secret))
 	mac.Write(payload)
 	expectedSignature := hex.EncodeToString(mac.Sum(nil))
 
@@ -42,13 +63,36 @@ func (v *Validator) ValidateSignature(payload []byte, signature string) error {
 	return nil
 }
 
-// GenerateSignature generates an HMAC-SHA256 signature for a payload
-func (v *Validator) GenerateSignature(payload []byte) string {
+// GenerateSignature generates an HMAC signature for a payload using the specified algorithm
+func (v *Validator) GenerateSignature(payload []byte, algorithm string) string {
 	if v.secret == "" {
 		return ""
 	}
 
-	mac := hmac.New(sha256.New, []byte(v.secret))
+	var hashFunc func() hash.Hash
+	var prefix string
+
+	// Default to SHA-256 if not specified
+	if algorithm == "" {
+		algorithm = "SHA-256"
+	}
+
+	switch strings.ToUpper(algorithm) {
+	case "SHA-1":
+		hashFunc = sha1.New
+		prefix = "sha1"
+	case "SHA-256":
+		hashFunc = sha256.New
+		prefix = "sha256"
+	case "SHA-512":
+		hashFunc = sha512.New
+		prefix = "sha512"
+	default:
+		hashFunc = sha256.New
+		prefix = "sha256"
+	}
+
+	mac := hmac.New(hashFunc, []byte(v.secret))
 	mac.Write(payload)
-	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	return prefix + "=" + hex.EncodeToString(mac.Sum(nil))
 }

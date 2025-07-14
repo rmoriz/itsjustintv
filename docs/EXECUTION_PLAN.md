@@ -63,7 +63,9 @@ This document outlines the step-by-step implementation plan to complete the miss
 [global_webhook]
 enabled = true
 url = "https://example.com/webhook"
-hmac_secret = "global-secret"
+target_webhook_secret = "global-secret"
+target_webhook_header = "X-Hub-Signature-256"
+target_webhook_hashing = "SHA-256"
 ```
 
 ### Phase 5: Testing and Validation ✅ COMPLETE

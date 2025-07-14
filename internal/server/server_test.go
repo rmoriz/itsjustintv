@@ -81,7 +81,7 @@ func TestHandleTwitchWebhook(t *testing.T) {
 	validPayload := `{"challenge":"test_challenge","subscription":{"id":"test","type":"stream.online"}}`
 
 	// Generate valid signature
-	signature := server.webhookValidator.GenerateSignature([]byte(validPayload))
+	signature := server.webhookValidator.GenerateSignature([]byte(validPayload), "SHA-256")
 
 	tests := []struct {
 		name           string

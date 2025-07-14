@@ -55,9 +55,9 @@ func TestProcessNotificationStreamOnlineConfiguredStreamer(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Streamers = map[string]config.StreamerConfig{
 		"test_streamer": {
-			UserID:     "123456789",
-			Login:      "teststreamer",
-			WebhookURL: "https://example.com/webhook",
+			UserID:           "123456789",
+			Login:            "teststreamer",
+			TargetWebhookURL: "https://example.com/webhook",
 		},
 	}
 

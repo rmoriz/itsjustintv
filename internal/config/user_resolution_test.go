@@ -46,8 +46,8 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			config: &Config{
 				Streamers: map[string]StreamerConfig{
 					"test_streamer": {
-						Login:      "testuser",
-						WebhookURL: "https://example.com/webhook",
+						Login:           "testuser",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},
@@ -58,8 +58,8 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 				Streamers: map[string]StreamerConfig{
 					"test_streamer": {
 						UserID:     "123456789",
-						Login:      "testuser",
-						WebhookURL: "https://example.com/webhook",
+						Login:           "testuser",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},
@@ -70,9 +70,9 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			config: &Config{
 				Streamers: map[string]StreamerConfig{
 					"existing_streamer": {
-						UserID:     "987654321",
-						Login:      "existinguser",
-						WebhookURL: "https://example.com/webhook",
+						UserID:           "987654321",
+						Login:            "existinguser",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},
@@ -82,9 +82,9 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			expectedConfig: &Config{
 				Streamers: map[string]StreamerConfig{
 					"existing_streamer": {
-						UserID:     "987654321", // Should remain unchanged
-						Login:      "existinguser",
-						WebhookURL: "https://example.com/webhook",
+						UserID:           "987654321", // Should remain unchanged
+						Login:            "existinguser",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},
@@ -95,7 +95,7 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			config: &Config{
 				Streamers: map[string]StreamerConfig{
 					"no_login_streamer": {
-						WebhookURL: "https://example.com/webhook",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},
@@ -103,7 +103,7 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			expectedConfig: &Config{
 				Streamers: map[string]StreamerConfig{
 					"no_login_streamer": {
-						WebhookURL: "https://example.com/webhook",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},
@@ -115,7 +115,7 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 				Streamers: map[string]StreamerConfig{
 					"unknown_streamer": {
 						Login:      "unknownuser",
-						WebhookURL: "https://example.com/webhook",
+						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
 			},

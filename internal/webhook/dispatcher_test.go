@@ -71,7 +71,7 @@ func TestDispatchSuccess(t *testing.T) {
 func TestDispatchWithHMAC(t *testing.T) {
 	// Create test server that validates HMAC
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		signature := r.Header.Get("X-Signature-256")
+		signature := r.Header.Get("X-Hub-Signature-256")
 		assert.NotEmpty(t, signature)
 		assert.Contains(t, signature, "sha256=")
 
@@ -95,7 +95,7 @@ func TestDispatchWithHMAC(t *testing.T) {
 	req := &DispatchRequest{
 		WebhookURL:  server.URL,
 		Payload:     payload,
-		HMACSecret:  "test_secret",
+		WebhookSecret:  "test_secret",
 		StreamerKey: "test_streamer",
 		Attempt:     1,
 	}
@@ -177,10 +177,10 @@ func TestCreatePayload(t *testing.T) {
 	dispatcher := NewDispatcher(cfg, logger)
 
 	streamerConfig := config.StreamerConfig{
-		UserID:         "123456789",
-		Login:          "teststreamer",
-		WebhookURL:     "https://example.com/webhook",
-		AdditionalTags: []string{"vip", "partner"},
+		UserID:             "123456789",
+		Login:              "teststreamer",
+		TargetWebhookURL:   "https://example.com/webhook",
+		AdditionalTags:     []string{"vip", "partner"},
 	}
 
 	eventData := map[string]interface{}{
@@ -207,9 +207,9 @@ func TestCreatePayloadFallbacks(t *testing.T) {
 	dispatcher := NewDispatcher(cfg, logger)
 
 	streamerConfig := config.StreamerConfig{
-		UserID:     "123456789",
-		Login:      "teststreamer",
-		WebhookURL: "https://example.com/webhook",
+		UserID:           "123456789",
+		Login:            "teststreamer",
+		TargetWebhookURL: "https://example.com/webhook",
 	}
 
 	// Event data with missing fields

@@ -58,12 +58,14 @@ type ImageData struct {
 
 // DispatchRequest represents a webhook dispatch request
 type DispatchRequest struct {
-	WebhookURL  string         `json:"webhook_url"`
-	Payload     WebhookPayload `json:"payload"`
-	HMACSecret  string         `json:"hmac_secret,omitempty"`
-	StreamerKey string         `json:"streamer_key"`
-	Attempt     int            `json:"attempt"`
-	NextRetry   time.Time      `json:"next_retry,omitempty"`
+	WebhookURL     string         `json:"webhook_url"`
+	Payload        WebhookPayload `json:"payload"`
+	WebhookSecret  string         `json:"webhook_secret,omitempty"`
+	WebhookHeader  string         `json:"webhook_header,omitempty"`
+	WebhookHashing string         `json:"webhook_hashing,omitempty"`
+	StreamerKey    string         `json:"streamer_key"`
+	Attempt        int            `json:"attempt"`
+	NextRetry      time.Time      `json:"next_retry,omitempty"`
 }
 
 // DispatchResult represents the result of a webhook dispatch
@@ -111,10 +113,20 @@ func (d *Dispatcher) Dispatch(ctx context.Context, req *DispatchRequest) *Dispat
 	httpReq.Header.Set("User-Agent", "itsjustintv/1.6")
 
 	// Add HMAC signature if secret is provided
-	if req.HMACSecret != "" {
-		validator := NewValidator(req.HMACSecret)
-		signature := validator.GenerateSignature(payloadBytes)
-		httpReq.Header.Set("X-Signature-256", signature)
+	if req.WebhookSecret != "" {
+		header := req.WebhookHeader
+		if header == "" {
+			header = "X-Hub-Signature-256" // Default header
+		}
+		
+		hashing := req.WebhookHashing
+		if hashing == "" {
+			hashing = "SHA-256" // Default hashing
+		}
+		
+		validator := NewValidator(req.WebhookSecret)
+		signature := validator.GenerateSignature(payloadBytes, req.WebhookHashing)
+		httpReq.Header.Set(header, signature)
 	}
 
 	// Send request

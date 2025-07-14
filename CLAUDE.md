@@ -125,7 +125,7 @@ webhook_secret = "your-webhook-secret"
 
 [streamers.streamer1]
 login = "streamername"
-webhook_url = "https://example.com/webhook"
+target_webhook_url = "https://example.com/webhook"
 tag_filter = ["Science & Technology"]
 additional_tags = ["selfhosted"]
 

@@ -142,15 +142,15 @@ go build -o itsjustintv ./cmd/itsjustintv
    # Simple configuration - user_id will be resolved automatically!
    [streamers.my_favorite_streamer]
    login = "shroud"  # Just the login name - user_id auto-resolved
-   webhook_url = "https://your-webhook-endpoint.com/webhook"
+   target_webhook_url = "https://your-webhook-endpoint.com/webhook"
    
    # Advanced configuration with filtering
    [streamers.another_streamer]
    login = "ninja"
-   webhook_url = "https://another-endpoint.com/webhook"
+   target_webhook_url = "https://another-endpoint.com/webhook"
    tag_filter = ["English", "Gaming"]  # Only notify for these tags
    additional_tags = ["vip_streamer"]  # Add custom tags to payload
-   hmac_secret = "optional_hmac_secret"  # Sign this webhook
+   target_webhook_secret = "optional_hmac_secret"  # Sign this webhook
    ```
 
 4. **Start the Service**
@@ -225,10 +225,12 @@ user_id = "123456789"              # Twitch user ID
 login = "streamer_login"           # Twitch login name
 
 # Common settings
-webhook_url = "https://example.com/webhook"
+target_webhook_url = "https://example.com/webhook"
 tag_filter = ["English", "Gaming"] # Optional: filter by stream tags
 additional_tags = ["vip"]          # Optional: add custom tags to payload
-hmac_secret = "optional_secret"    # Optional: HMAC sign this webhook
+target_webhook_secret = "optional_secret"    # Optional: HMAC sign this webhook
+target_webhook_header = "X-Hub-Signature-256" # Optional: signature header name
+target_webhook_hashing = "SHA-256"            # Optional: hashing algorithm
 ```
 
 ### Retry Configuration

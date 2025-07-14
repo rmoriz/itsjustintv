@@ -59,7 +59,7 @@ webhook_secret = "test_webhook_secret"
 [streamers.test_streamer]
 user_id = "123456"
 login = "test_streamer"
-webhook_url = "https://test.com/webhook"
+target_webhook_url = "https://test.com/webhook"
 tag_filter = ["English"]
 additional_tags = ["test"]
 `
@@ -86,7 +86,7 @@ additional_tags = ["test"]
 	streamer := cfg.Streamers["test_streamer"]
 	assert.Equal(t, "123456", streamer.UserID)
 	assert.Equal(t, "test_streamer", streamer.Login)
-	assert.Equal(t, "https://test.com/webhook", streamer.WebhookURL)
+	assert.Equal(t, "https://test.com/webhook", streamer.TargetWebhookURL)
 	assert.Equal(t, []string{"English"}, streamer.TagFilter)
 	assert.Equal(t, []string{"test"}, streamer.AdditionalTags)
 }

@@ -31,7 +31,7 @@ enabled = false
 [streamers.example_streamer]
 user_id = "123456789"
 login = "example_streamer"
-webhook_url = "https://your-webhook-endpoint.com/webhook"
+target_webhook_url = "https://your-webhook-endpoint.com/webhook"
 tag_filter = ["English", "Gaming"]
 additional_tags = ["vip"]
-hmac_secret = "optional_hmac_secret"
+target_webhook_secret = "optional_hmac_secret"
