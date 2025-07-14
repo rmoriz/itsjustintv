@@ -125,7 +125,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, req *DispatchRequest) *Dispat
 		}
 		
 		validator := NewValidator(req.WebhookSecret)
-		signature := validator.GenerateSignature(payloadBytes, req.WebhookHashing)
+		signature := validator.GenerateSignature(payloadBytes, hashing)
 		httpReq.Header.Set(header, signature)
 	}
 

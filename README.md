@@ -195,6 +195,8 @@ webhook_url = "https://example.com/webhook"
 [server]
 listen_addr = "0.0.0.0"
 port = 8080
+# External domain for reverse proxy scenarios (nginx, traefik, cloud load balancers)
+external_domain = "your-domain.com"
 
 # Optional HTTPS with Let's Encrypt
 [server.tls]
@@ -268,6 +270,27 @@ service_name = "itsjustintv"
 service_version = "1.6.0"
 ```
 
+### Reverse Proxy Configuration
+
+For production deployments behind reverse proxies (nginx, traefik, cloud load balancers):
+
+```toml
+[server]
+listen_addr = "127.0.0.1"  # Bind to localhost
+port = 8080               # Internal port
+external_domain = "your-domain.com"  # External domain for webhook URLs
+
+[twitch]
+# Optional: Use incoming_webhook_url for explicit control
+incoming_webhook_url = "https://your-domain.com/twitch"
+```
+
+**Priority order for webhook URLs:**
+1. `twitch.incoming_webhook_url` (highest priority)
+2. `server.external_domain` (for reverse proxy HTTPS)
+3. `server.tls.domains[0]` (for direct HTTPS)
+4. `server.listen_addr:port` (fallback)
+
 ### Environment Variables
 
 Override any configuration with environment variables:
@@ -278,6 +301,7 @@ export ITSJUSTINTV_TWITCH_CLIENT_SECRET="your_client_secret"
 export ITSJUSTINTV_TWITCH_WEBHOOK_SECRET="your_webhook_secret"
 export ITSJUSTINTV_SERVER_PORT="8080"
 export ITSJUSTINTV_TLS_ENABLED="true"
+export ITSJUSTINTV_SERVER_EXTERNAL_DOMAIN="your-domain.com"
 ```
 
 ## Webhook Payload

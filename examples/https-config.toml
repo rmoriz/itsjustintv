@@ -2,6 +2,8 @@
 [server]
 listen_addr = "0.0.0.0"
 port = 443
+# Alternative: Use external_domain for reverse proxy setups
+# external_domain = "your-domain.com"
 
 [server.tls]
 enabled = true

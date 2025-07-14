@@ -5,6 +5,9 @@
 # Server listen address and port
 listen_addr = "0.0.0.0"
 port = 8080
+# External domain for reverse proxy scenarios (e.g., nginx, traefik, cloud load balancers)
+# Use this when the service is behind a reverse proxy with TLS termination
+external_domain = "your-domain.com"
 
 # TLS/HTTPS configuration (optional)
 [server.tls]

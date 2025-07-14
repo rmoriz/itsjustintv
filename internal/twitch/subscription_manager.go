@@ -291,6 +291,12 @@ func (sm *SubscriptionManager) RefreshSubscriptions(ctx context.Context) error {
 
 // buildCallbackURL constructs the callback URL for EventSub subscriptions
 func buildCallbackURL(cfg *config.Config) string {
+	// Use external_domain if specified (for reverse proxy scenarios)
+	if cfg.Server.ExternalDomain != "" {
+		// Use HTTPS by default for external domains, as they typically use reverse proxies with TLS
+		return fmt.Sprintf("https://%s/twitch", cfg.Server.ExternalDomain)
+	}
+
 	scheme := "http"
 	if cfg.Server.TLS.Enabled {
 		scheme = "https"

@@ -26,9 +26,10 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration
 type ServerConfig struct {
-	ListenAddr string `toml:"listen_addr"`
-	Port       int    `toml:"port"`
-	TLS        struct {
+	ListenAddr   string `toml:"listen_addr"`
+	Port         int    `toml:"port"`
+	ExternalDomain string `toml:"external_domain"`
+	TLS          struct {
 		Enabled bool     `toml:"enabled"`
 		Domains []string `toml:"domains"`
 		CertDir string   `toml:"cert_dir"`
@@ -94,8 +95,9 @@ type GlobalWebhookConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
-			ListenAddr: "0.0.0.0",
-			Port:       8080,
+			ListenAddr:     "0.0.0.0",
+			Port:           8080,
+			ExternalDomain: "",
 			TLS: struct {
 				Enabled bool     `toml:"enabled"`
 				Domains []string `toml:"domains"`
