@@ -152,6 +152,8 @@ service_name = "itsjustintv"
 - **Docker**: Automatic `latest` tag on main
 - **Releases**: Multi-arch binaries on Git tags
 - **Platforms**: linux-amd64, linux-arm64, darwin-aarch64
+- **Release Notes**: Add to both local CHANGES.md and GitHub releases
+- **Documentation**: Update README.md and config examples
 
 ## Common Commands
 ```bash
