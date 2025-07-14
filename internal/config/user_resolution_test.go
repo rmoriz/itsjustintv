@@ -127,14 +127,14 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockResolver := &MockTwitchUserResolver{users: tt.mockUsers}
-			
+
 			err := ResolveStreamerUserIDs(context.Background(), tt.config, mockResolver)
-			
+
 			if tt.expectError {
 				require.Error(t, err)
 				return
 			}
-			
+
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedConfig.Streamers, tt.config.Streamers)
 		})

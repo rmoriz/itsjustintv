@@ -141,12 +141,12 @@ func (w *Writer) GetStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"enabled":           w.config.Output.Enabled,
-		"total_entries":     len(w.payloads),
-		"successful_sends":  successful,
-		"failed_sends":      failed,
-		"max_lines":         w.config.Output.MaxLines,
-		"file_path":         w.config.Output.FilePath,
+		"enabled":          w.config.Output.Enabled,
+		"total_entries":    len(w.payloads),
+		"successful_sends": successful,
+		"failed_sends":     failed,
+		"max_lines":        w.config.Output.MaxLines,
+		"file_path":        w.config.Output.FilePath,
 	}
 }
 
@@ -192,4 +192,9 @@ func (w *Writer) saveData() error {
 	}
 
 	return nil
+}
+
+// UpdateConfig updates the output writer configuration
+func (w *Writer) UpdateConfig(newConfig *config.Config) {
+	w.config = newConfig
 }

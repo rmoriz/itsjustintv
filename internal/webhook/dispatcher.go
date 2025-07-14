@@ -34,18 +34,18 @@ func NewDispatcher(cfg *config.Config, logger *slog.Logger) *Dispatcher {
 
 // WebhookPayload represents the payload sent to webhooks
 type WebhookPayload struct {
-	StreamerLogin   string            `json:"streamer_login"`
-	StreamerName    string            `json:"streamer_name"`
-	StreamerID      string            `json:"streamer_id"`
-	URL             string            `json:"url"`
-	ViewCount       int               `json:"view_count,omitempty"`
-	FollowersCount  int               `json:"followers_count,omitempty"`
-	Tags            []string          `json:"tags,omitempty"`
-	Language        string            `json:"language,omitempty"`
-	Description     string            `json:"description,omitempty"`
-	Image           *ImageData        `json:"image,omitempty"`
-	Timestamp       time.Time         `json:"timestamp"`
-	AdditionalTags  []string          `json:"additional_tags,omitempty"`
+	StreamerLogin  string     `json:"streamer_login"`
+	StreamerName   string     `json:"streamer_name"`
+	StreamerID     string     `json:"streamer_id"`
+	URL            string     `json:"url"`
+	ViewCount      int        `json:"view_count,omitempty"`
+	FollowersCount int        `json:"followers_count,omitempty"`
+	Tags           []string   `json:"tags,omitempty"`
+	Language       string     `json:"language,omitempty"`
+	Description    string     `json:"description,omitempty"`
+	Image          *ImageData `json:"image,omitempty"`
+	Timestamp      time.Time  `json:"timestamp"`
+	AdditionalTags []string   `json:"additional_tags,omitempty"`
 }
 
 // ImageData represents profile image data
@@ -78,7 +78,7 @@ type DispatchResult struct {
 // Dispatch sends a webhook with the given payload
 func (d *Dispatcher) Dispatch(ctx context.Context, req *DispatchRequest) *DispatchResult {
 	start := time.Now()
-	
+
 	d.logger.Info("Dispatching webhook",
 		"webhook_url", req.WebhookURL,
 		"streamer_key", req.StreamerKey,
@@ -184,4 +184,9 @@ func getStringFromEvent(eventData map[string]interface{}, key string) string {
 		}
 	}
 	return ""
+}
+
+// UpdateConfig updates the dispatcher configuration
+func (d *Dispatcher) UpdateConfig(newConfig *config.Config) {
+	d.config = newConfig
 }

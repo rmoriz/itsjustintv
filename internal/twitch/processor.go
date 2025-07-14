@@ -139,8 +139,8 @@ func (p *Processor) handleRevocation(notification EventSubNotification) (*Proces
 // findStreamerConfig finds a streamer configuration by user ID or login
 func (p *Processor) findStreamerConfig(userID, login string) *config.StreamerConfig {
 	for _, streamerConfig := range p.config.Streamers {
-		if streamerConfig.UserID == userID || 
-		   strings.EqualFold(streamerConfig.Login, login) {
+		if streamerConfig.UserID == userID ||
+			strings.EqualFold(streamerConfig.Login, login) {
 			return &streamerConfig
 		}
 	}
@@ -150,8 +150,8 @@ func (p *Processor) findStreamerConfig(userID, login string) *config.StreamerCon
 // findStreamerConfigKey finds the configuration key for a streamer
 func findStreamerConfigKey(streamers map[string]config.StreamerConfig, userID, login string) string {
 	for key, streamerConfig := range streamers {
-		if streamerConfig.UserID == userID || 
-		   strings.EqualFold(streamerConfig.Login, login) {
+		if streamerConfig.UserID == userID ||
+			strings.EqualFold(streamerConfig.Login, login) {
 			return key
 		}
 	}

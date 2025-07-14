@@ -10,17 +10,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/rmoriz/itsjustintv/internal/config"
 )
 
 func TestNew(t *testing.T) {
 	cfg := config.DefaultConfig()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	
+
 	server := New(cfg, logger)
-	
+
 	assert.NotNil(t, server)
 	assert.Equal(t, cfg, server.config)
 	assert.Equal(t, logger, server.logger)
@@ -79,7 +79,7 @@ func TestHandleTwitchWebhook(t *testing.T) {
 
 	// Create a valid webhook payload
 	validPayload := `{"challenge":"test_challenge","subscription":{"id":"test","type":"stream.online"}}`
-	
+
 	// Generate valid signature
 	signature := server.webhookValidator.GenerateSignature([]byte(validPayload))
 
@@ -93,9 +93,9 @@ func TestHandleTwitchWebhook(t *testing.T) {
 		expectedBody   string
 	}{
 		{
-			name:    "POST request with valid signature - verification",
-			method:  http.MethodPost,
-			payload: validPayload,
+			name:      "POST request with valid signature - verification",
+			method:    http.MethodPost,
+			payload:   validPayload,
 			signature: signature,
 			headers: map[string]string{
 				"Twitch-Eventsub-Message-Type": "webhook_callback_verification",
@@ -127,15 +127,15 @@ func TestHandleTwitchWebhook(t *testing.T) {
 			} else {
 				req = httptest.NewRequest(tt.method, "/twitch", nil)
 			}
-			
+
 			if tt.signature != "" {
 				req.Header.Set("Twitch-Eventsub-Message-Signature", tt.signature)
 			}
-			
+
 			for key, value := range tt.headers {
 				req.Header.Set(key, value)
 			}
-			
+
 			w := httptest.NewRecorder()
 
 			server.handleTwitchWebhook(w, req)
@@ -221,10 +221,10 @@ func TestSetupTLS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := config.DefaultConfig()
 			tt.setupConfig(cfg)
-			
+
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			server := New(cfg, logger)
-			
+
 			// Create a dummy HTTP server for TLS setup
 			server.httpServer = &http.Server{}
 

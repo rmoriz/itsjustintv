@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/rmoriz/itsjustintv/internal/config"
 )
 
 func TestNewProcessor(t *testing.T) {
 	cfg := config.DefaultConfig()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	
+
 	processor := NewProcessor(cfg, logger)
-	
+
 	assert.NotNil(t, processor)
 	assert.Equal(t, cfg, processor.config)
 	assert.Equal(t, logger, processor.logger)
@@ -60,7 +60,7 @@ func TestProcessNotificationStreamOnlineConfiguredStreamer(t *testing.T) {
 			WebhookURL: "https://example.com/webhook",
 		},
 	}
-	
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	processor := NewProcessor(cfg, logger)
 
@@ -100,7 +100,7 @@ func TestProcessNotificationStreamOnlineConfiguredStreamer(t *testing.T) {
 func TestProcessNotificationStreamOnlineUnconfiguredStreamer(t *testing.T) {
 	cfg := config.DefaultConfig()
 	// No streamers configured
-	
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	processor := NewProcessor(cfg, logger)
 
@@ -237,7 +237,7 @@ func TestFindStreamerConfig(t *testing.T) {
 			Login:  "teststreamer2",
 		},
 	}
-	
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	processor := NewProcessor(cfg, logger)
 

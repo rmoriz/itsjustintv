@@ -18,6 +18,9 @@ type Config struct {
 	Retry     RetryConfig               `toml:"retry"`
 	Output    OutputConfig              `toml:"output"`
 	Telemetry TelemetryConfig           `toml:"telemetry"`
+	
+	// Internal fields (not loaded from TOML)
+	configPath string
 }
 
 // ServerConfig holds HTTP server configuration
@@ -138,7 +141,15 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
+	// Set config path for later reference
+	config.configPath = configPath
+	
 	return config, nil
+}
+
+// GetConfigPath returns the path to the configuration file
+func (config *Config) GetConfigPath() string {
+	return config.configPath
 }
 
 // ResolveStreamerUserIDs resolves missing user IDs for streamers using Twitch API

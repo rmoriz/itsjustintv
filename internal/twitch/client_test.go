@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/rmoriz/itsjustintv/internal/config"
 )
 
 func TestNewClient(t *testing.T) {
@@ -100,7 +100,7 @@ func TestGetUserInfo(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	client := NewClient(cfg, logger)
-	
+
 	// Set up a mock token
 	client.token = &AppAccessToken{
 		AccessToken: "test_token",
@@ -150,13 +150,13 @@ func TestGetChannelInfo(t *testing.T) {
 func TestTokenExpiration(t *testing.T) {
 	// Test token expiration logic
 	now := time.Now()
-	
+
 	// Token that expires in 10 minutes (should be considered expired due to 5min buffer)
 	expiredToken := &AppAccessToken{
 		AccessToken: "expired_token",
 		ExpiresAt:   now.Add(3 * time.Minute),
 	}
-	
+
 	// Token that expires in 10 minutes (should be valid)
 	validToken := &AppAccessToken{
 		AccessToken: "valid_token",

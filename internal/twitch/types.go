@@ -31,38 +31,38 @@ type EventSubTransport struct {
 
 // StreamOnlineEvent represents a stream.online event
 type StreamOnlineEvent struct {
-	ID               string    `json:"id"`
-	BroadcasterUserID string   `json:"broadcaster_user_id"`
-	BroadcasterUserLogin string `json:"broadcaster_user_login"`
-	BroadcasterUserName string `json:"broadcaster_user_name"`
-	Type             string    `json:"type"`
-	StartedAt        time.Time `json:"started_at"`
+	ID                   string    `json:"id"`
+	BroadcasterUserID    string    `json:"broadcaster_user_id"`
+	BroadcasterUserLogin string    `json:"broadcaster_user_login"`
+	BroadcasterUserName  string    `json:"broadcaster_user_name"`
+	Type                 string    `json:"type"`
+	StartedAt            time.Time `json:"started_at"`
 }
 
 // EventSubHeaders represents the headers sent with EventSub notifications
 type EventSubHeaders struct {
-	MessageID        string `json:"message_id"`
-	MessageRetry     string `json:"message_retry"`
-	MessageType      string `json:"message_type"`
-	MessageSignature string `json:"message_signature"`
-	MessageTimestamp string `json:"message_timestamp"`
-	SubscriptionType string `json:"subscription_type"`
+	MessageID           string `json:"message_id"`
+	MessageRetry        string `json:"message_retry"`
+	MessageType         string `json:"message_type"`
+	MessageSignature    string `json:"message_signature"`
+	MessageTimestamp    string `json:"message_timestamp"`
+	SubscriptionType    string `json:"subscription_type"`
 	SubscriptionVersion string `json:"subscription_version"`
 }
 
 // MessageType constants
 const (
 	MessageTypeWebhookCallbackVerification = "webhook_callback_verification"
-	MessageTypeNotification               = "notification"
-	MessageTypeRevocation                 = "revocation"
+	MessageTypeNotification                = "notification"
+	MessageTypeRevocation                  = "revocation"
 )
 
 // Subscription status constants
 const (
-	SubscriptionStatusEnabled                = "enabled"
+	SubscriptionStatusEnabled                            = "enabled"
 	SubscriptionStatusWebhookCallbackVerificationPending = "webhook_callback_verification_pending"
-	SubscriptionStatusWebhookCallbackVerificationFailed = "webhook_callback_verification_failed"
-	SubscriptionStatusNotificationFailuresExceeded = "notification_failures_exceeded"
-	SubscriptionStatusAuthorizationRevoked = "authorization_revoked"
-	SubscriptionStatusUserRemoved = "user_removed"
+	SubscriptionStatusWebhookCallbackVerificationFailed  = "webhook_callback_verification_failed"
+	SubscriptionStatusNotificationFailuresExceeded       = "notification_failures_exceeded"
+	SubscriptionStatusAuthorizationRevoked               = "authorization_revoked"
+	SubscriptionStatusUserRemoved                        = "user_removed"
 )

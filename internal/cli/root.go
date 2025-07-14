@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/rmoriz/itsjustintv/internal/server"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -56,12 +56,12 @@ func determineConfigPath(flagValue string) string {
 	if flagValue != "config.toml" {
 		return flagValue
 	}
-	
+
 	// 2. Use ITSJUSTINTV_CONFIG environment variable
 	if envConfig := os.Getenv("ITSJUSTINTV_CONFIG"); envConfig != "" {
 		return envConfig
 	}
-	
+
 	// 3. Try to load config.toml from working directory
 	return "config.toml"
 }
@@ -70,12 +70,12 @@ func determineConfigPath(flagValue string) string {
 func runServer(cmd *cobra.Command, args []string) error {
 	// Determine configuration file path using priority order
 	configPath := determineConfigPath(configFile)
-	
+
 	// Check if config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return fmt.Errorf("configuration file not found: %s\n\nConfiguration file loading priority:\n1. Use value from --config flag\n2. Use ITSJUSTINTV_CONFIG environment variable\n3. Try to load config.toml from working directory", configPath)
 	}
-	
+
 	// Load configuration
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -84,7 +84,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Always print which config file was loaded
 	fmt.Printf("Loaded configuration from: %s\n", configPath)
-	
+
 	if verbose {
 		fmt.Printf("Server will listen on: %s:%d\n", cfg.Server.ListenAddr, cfg.Server.Port)
 		fmt.Printf("TLS enabled: %t\n", cfg.Server.TLS.Enabled)
@@ -92,15 +92,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Setup logger
 	logger := setupLogger(verbose)
-	
+
 	// Create and start server
 	server := server.New(cfg, logger)
-	
+
 	ctx := cmd.Context()
 	if err := server.Start(ctx); err != nil {
 		return fmt.Errorf("server error: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -134,12 +134,12 @@ var configValidateCmd = &cobra.Command{
 	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		configPath := determineConfigPath(configFile)
-		
+
 		// Check if config file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			return fmt.Errorf("configuration file not found: %s\n\nConfiguration file loading priority:\n1. Use value from --config flag\n2. Use ITSJUSTINTV_CONFIG environment variable\n3. Try to load config.toml from working directory", configPath)
 		}
-	
+
 		// Load configuration
 		cfg, err := config.LoadConfig(configPath)
 		if err != nil {
@@ -148,7 +148,7 @@ var configValidateCmd = &cobra.Command{
 
 		fmt.Printf("Configuration file '%s' is valid\n", configPath)
 		fmt.Printf("Found %d configured streamers\n", len(cfg.Streamers))
-		
+
 		return nil
 	},
 }

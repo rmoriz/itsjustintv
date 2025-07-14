@@ -10,17 +10,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/rmoriz/itsjustintv/internal/config"
 )
 
 func TestNewDispatcher(t *testing.T) {
 	cfg := config.DefaultConfig()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	
+
 	dispatcher := NewDispatcher(cfg, logger)
-	
+
 	assert.NotNil(t, dispatcher)
 	assert.Equal(t, cfg, dispatcher.config)
 	assert.Equal(t, logger, dispatcher.logger)
@@ -33,7 +33,7 @@ func TestDispatchSuccess(t *testing.T) {
 		assert.Equal(t, "POST", r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, "itsjustintv/1.6", r.Header.Get("User-Agent"))
-		
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	}))
@@ -74,7 +74,7 @@ func TestDispatchWithHMAC(t *testing.T) {
 		signature := r.Header.Get("X-Signature-256")
 		assert.NotEmpty(t, signature)
 		assert.Contains(t, signature, "sha256=")
-		
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	}))
@@ -227,17 +227,17 @@ func TestCreatePayloadFallbacks(t *testing.T) {
 
 func TestWebhookPayloadJSON(t *testing.T) {
 	payload := WebhookPayload{
-		StreamerLogin:   "teststreamer",
-		StreamerName:    "Test Streamer",
-		StreamerID:      "123456789",
-		URL:             "https://twitch.tv/teststreamer",
-		ViewCount:       1337,
-		FollowersCount:  50000,
-		Tags:            []string{"English", "Gaming"},
-		Language:        "en",
-		Description:     "Playing games",
-		Timestamp:       time.Date(2025, 7, 13, 12, 0, 0, 0, time.UTC),
-		AdditionalTags:  []string{"vip"},
+		StreamerLogin:  "teststreamer",
+		StreamerName:   "Test Streamer",
+		StreamerID:     "123456789",
+		URL:            "https://twitch.tv/teststreamer",
+		ViewCount:      1337,
+		FollowersCount: 50000,
+		Tags:           []string{"English", "Gaming"},
+		Language:       "en",
+		Description:    "Playing games",
+		Timestamp:      time.Date(2025, 7, 13, 12, 0, 0, 0, time.UTC),
+		AdditionalTags: []string{"vip"},
 	}
 
 	data, err := json.Marshal(payload)

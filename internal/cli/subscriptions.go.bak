@@ -51,11 +51,7 @@ func runListSubscriptions(cmd *cobra.Command, args []string) error {
 	if err := client.Start(context.Background()); err != nil {
 		return fmt.Errorf("failed to start Twitch client: %w", err)
 	}
-	defer func() {
-		if err := client.Stop(); err != nil {
-			logger.Error("Failed to stop Twitch client", "error", err)
-		}
-	}()
+	defer client.Stop()
 
 	// Create subscription manager
 	subManager := twitch.NewSubscriptionManager(cfg, logger, client)
@@ -120,11 +116,7 @@ func runSyncSubscriptions(cmd *cobra.Command, args []string) error {
 	if err := client.Start(context.Background()); err != nil {
 		return fmt.Errorf("failed to start Twitch client: %w", err)
 	}
-	defer func() {
-		if err := client.Stop(); err != nil {
-			logger.Error("Failed to stop Twitch client", "error", err)
-		}
-	}()
+	defer client.Stop()
 
 	// Resolve missing user IDs for streamers
 	ctx := context.Background()

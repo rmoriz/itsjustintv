@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/rmoriz/itsjustintv/internal/config"
 )
 
 func TestServerIntegrationHTTP(t *testing.T) {
@@ -82,7 +82,7 @@ func TestServerIntegrationHTTP(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-		
+
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "Unauthorized")

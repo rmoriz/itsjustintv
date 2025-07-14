@@ -10,7 +10,7 @@ import (
 func TestNewValidator(t *testing.T) {
 	secret := "test_secret"
 	validator := NewValidator(secret)
-	
+
 	assert.NotNil(t, validator)
 	assert.Equal(t, secret, validator.secret)
 }
@@ -58,7 +58,7 @@ func TestValidateSignature(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.ValidateSignature(tt.payload, tt.signature)
-			
+
 			if tt.expectError {
 				require.Error(t, err)
 				if tt.errorMsg != "" {
@@ -78,11 +78,11 @@ func TestValidateSignatureWithCorrectSignature(t *testing.T) {
 
 	// Generate the correct signature
 	expectedSignature := validator.GenerateSignature(payload)
-	
+
 	// Test with the correct signature
 	err := validator.ValidateSignature(payload, expectedSignature)
 	assert.NoError(t, err)
-	
+
 	// Test without sha256 prefix
 	signatureWithoutPrefix := expectedSignature[7:] // Remove "sha256="
 	err = validator.ValidateSignature(payload, signatureWithoutPrefix)
@@ -92,7 +92,7 @@ func TestValidateSignatureWithCorrectSignature(t *testing.T) {
 func TestValidateSignatureNoSecret(t *testing.T) {
 	validator := NewValidator("")
 	payload := []byte(`{"test":"data"}`)
-	
+
 	err := validator.ValidateSignature(payload, "any_signature")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "webhook secret not configured")
@@ -104,15 +104,15 @@ func TestGenerateSignature(t *testing.T) {
 	payload := []byte(`{"test":"data"}`)
 
 	signature := validator.GenerateSignature(payload)
-	
+
 	assert.NotEmpty(t, signature)
 	assert.True(t, len(signature) > 7) // Should have "sha256=" prefix plus hex
 	assert.Contains(t, signature, "sha256=")
-	
+
 	// Test that the same payload generates the same signature
 	signature2 := validator.GenerateSignature(payload)
 	assert.Equal(t, signature, signature2)
-	
+
 	// Test that different payloads generate different signatures
 	differentPayload := []byte(`{"different":"data"}`)
 	differentSignature := validator.GenerateSignature(differentPayload)
@@ -122,7 +122,7 @@ func TestGenerateSignature(t *testing.T) {
 func TestGenerateSignatureNoSecret(t *testing.T) {
 	validator := NewValidator("")
 	payload := []byte(`{"test":"data"}`)
-	
+
 	signature := validator.GenerateSignature(payload)
 	assert.Empty(t, signature)
 }
@@ -130,7 +130,7 @@ func TestGenerateSignatureNoSecret(t *testing.T) {
 func TestSignatureRoundTrip(t *testing.T) {
 	secret := "test_secret_123"
 	validator := NewValidator(secret)
-	
+
 	testPayloads := [][]byte{
 		[]byte(`{"test":"data"}`),
 		[]byte(`{"stream":{"id":"123","user_login":"testuser"}}`),
@@ -138,17 +138,17 @@ func TestSignatureRoundTrip(t *testing.T) {
 		[]byte(`{}`),
 		[]byte(`{"complex":{"nested":{"data":["array","values"],"number":42}}}`),
 	}
-	
+
 	for i, payload := range testPayloads {
 		t.Run("payload_"+string(rune('0'+i)), func(t *testing.T) {
 			// Generate signature
 			signature := validator.GenerateSignature(payload)
 			require.NotEmpty(t, signature)
-			
+
 			// Validate the generated signature
 			err := validator.ValidateSignature(payload, signature)
 			assert.NoError(t, err)
-			
+
 			// Test with modified payload (should fail)
 			modifiedPayload := append(payload, byte(' '))
 			err = validator.ValidateSignature(modifiedPayload, signature)

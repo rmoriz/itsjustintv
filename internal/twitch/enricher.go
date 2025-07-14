@@ -263,3 +263,8 @@ func (e *Enricher) cleanupCache() {
 		e.logger.Debug("Image cache cleanup completed", "removed_files", removed)
 	}
 }
+
+// UpdateConfig updates the enricher configuration
+func (e *Enricher) UpdateConfig(newConfig *config.Config) {
+	e.config = newConfig
+}

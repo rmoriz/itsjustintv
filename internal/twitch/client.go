@@ -110,7 +110,7 @@ func (c *Client) GetUserInfo(ctx context.Context, userID string) (*UserInfo, err
 	}
 
 	url := fmt.Sprintf("https://api.twitch.tv/helix/users?id=%s", userID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -150,7 +150,7 @@ func (c *Client) GetUserInfoByLogin(ctx context.Context, login string) (*UserInf
 	}
 
 	url := fmt.Sprintf("https://api.twitch.tv/helix/users?login=%s", login)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -199,7 +199,7 @@ func (c *Client) GetUserInfoByLoginForConfig(ctx context.Context, login string) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &TwitchUserInfoForConfig{
 		ID:    userInfo.ID,
 		Login: userInfo.Login,
@@ -229,7 +229,7 @@ func (c *Client) GetChannelInfo(ctx context.Context, broadcasterID string) (*Cha
 	}
 
 	url := fmt.Sprintf("https://api.twitch.tv/helix/channels?broadcaster_id=%s", broadcasterID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -269,7 +269,7 @@ func (c *Client) GetFollowersCount(ctx context.Context, broadcasterID string) (i
 	}
 
 	url := fmt.Sprintf("https://api.twitch.tv/helix/channels/followers?broadcaster_id=%s&first=1", broadcasterID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request: %w", err)

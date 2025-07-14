@@ -40,6 +40,7 @@ type Server struct {
 	outputWriter        *output.Writer
 	subscriptionManager *twitch.SubscriptionManager
 	telemetryManager    *telemetry.Manager
+	configWatcher       *config.Watcher
 }
 
 // New creates a new server instance
@@ -66,6 +67,7 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 		outputWriter:        outputWriter,
 		subscriptionManager: subscriptionManager,
 		telemetryManager:    telemetryManager,
+		configWatcher:       nil, // Will be initialized in Start
 	}
 }
 
@@ -74,6 +76,11 @@ func (s *Server) Start(ctx context.Context) error {
 	// Start telemetry
 	if err := s.telemetryManager.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start telemetry: %w", err)
+	}
+
+	// Start config watcher
+	if err := s.startConfigWatcher(ctx); err != nil {
+		return fmt.Errorf("failed to start config watcher: %w", err)
 	}
 
 	// Start Twitch client
@@ -197,6 +204,13 @@ func (s *Server) Start(ctx context.Context) error {
 		s.logger.Error("Telemetry stop error", "error", err)
 	}
 
+	// Stop config watcher
+	if s.configWatcher != nil {
+		if err := s.configWatcher.Stop(); err != nil {
+			s.logger.Error("Config watcher stop error", "error", err)
+		}
+	}
+
 	s.logger.Info("Server stopped gracefully")
 	return nil
 }
@@ -257,6 +271,81 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+// startConfigWatcher initializes and starts the configuration file watcher
+func (s *Server) startConfigWatcher(ctx context.Context) error {
+	configPath := s.config.GetConfigPath()
+	if configPath == "" {
+		s.logger.Debug("No config path available, skipping file watcher")
+		return nil
+	}
+
+	watcher, err := config.NewWatcher(configPath, s.logger, s.handleConfigReload)
+	if err != nil {
+		return fmt.Errorf("failed to create config watcher: %w", err)
+	}
+
+	s.configWatcher = watcher
+	return s.configWatcher.Start(ctx)
+}
+
+// handleConfigReload handles configuration changes and updates subscriptions
+func (s *Server) handleConfigReload(newConfig *config.Config) error {
+	ctx := context.Background()
+	
+	// Record config reload metric
+	if s.telemetryManager != nil {
+		s.telemetryManager.RecordConfigReload(ctx, true)
+	}
+
+	s.logger.Info("Handling configuration reload")
+
+	// Update config reference
+	s.config = newConfig
+
+	// Update subscription manager with new config
+	if s.subscriptionManager != nil {
+		if err := s.subscriptionManager.UpdateConfig(newConfig); err != nil {
+			s.logger.Error("Failed to update subscription manager config", "error", err)
+			if s.telemetryManager != nil {
+				s.telemetryManager.RecordConfigReload(ctx, false)
+			}
+			return fmt.Errorf("failed to update subscription manager: %w", err)
+		}
+
+		// Refresh subscriptions based on new configuration
+		if err := s.subscriptionManager.RefreshSubscriptions(ctx); err != nil {
+			s.logger.Error("Failed to refresh subscriptions", "error", err)
+			if s.telemetryManager != nil {
+				s.telemetryManager.RecordConfigReload(ctx, false)
+			}
+			return fmt.Errorf("failed to refresh subscriptions: %w", err)
+		}
+	}
+
+	// Update webhook dispatcher with new config
+	if s.webhookDispatcher != nil {
+		s.webhookDispatcher.UpdateConfig(newConfig)
+	}
+
+	// Update retry manager with new config
+	if s.retryManager != nil {
+		s.retryManager.UpdateConfig(newConfig)
+	}
+
+	// Update output writer with new config
+	if s.outputWriter != nil {
+		s.outputWriter.UpdateConfig(newConfig)
+	}
+
+	// Update enricher with new config
+	if s.enricher != nil {
+		s.enricher.UpdateConfig(newConfig)
+	}
+
+	s.logger.Info("Configuration reload completed successfully")
+	return nil
 }
 
 // setupTLS configures TLS with Let's Encrypt autocert

@@ -228,3 +228,8 @@ func (m *Manager) saveState() error {
 
 	return nil
 }
+
+// UpdateConfig updates the retry manager configuration
+func (m *Manager) UpdateConfig(newConfig *config.Config) {
+	m.config = newConfig
+}
