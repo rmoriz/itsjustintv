@@ -13,13 +13,15 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/crypto/acme/autocert"
 	"github.com/rmoriz/itsjustintv/internal/cache"
 	"github.com/rmoriz/itsjustintv/internal/config"
 	"github.com/rmoriz/itsjustintv/internal/output"
 	"github.com/rmoriz/itsjustintv/internal/retry"
+	"github.com/rmoriz/itsjustintv/internal/telemetry"
 	"github.com/rmoriz/itsjustintv/internal/twitch"
 	"github.com/rmoriz/itsjustintv/internal/webhook"
+	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // Server represents the HTTP server with optional HTTPS support
@@ -37,6 +39,7 @@ type Server struct {
 	enricher            *twitch.Enricher
 	outputWriter        *output.Writer
 	subscriptionManager *twitch.SubscriptionManager
+	telemetryManager    *telemetry.Manager
 }
 
 // New creates a new server instance
@@ -48,6 +51,7 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 	enricher := twitch.NewEnricher(cfg, logger, twitchClient)
 	outputWriter := output.NewWriter(cfg, logger)
 	subscriptionManager := twitch.NewSubscriptionManager(cfg, logger, twitchClient)
+	telemetryManager := telemetry.NewManager(cfg, logger)
 
 	return &Server{
 		config:              cfg,
@@ -61,11 +65,17 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 		enricher:            enricher,
 		outputWriter:        outputWriter,
 		subscriptionManager: subscriptionManager,
+		telemetryManager:    telemetryManager,
 	}
 }
 
 // Start starts the HTTP server with optional HTTPS
 func (s *Server) Start(ctx context.Context) error {
+	// Start telemetry
+	if err := s.telemetryManager.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start telemetry: %w", err)
+	}
+
 	// Start Twitch client
 	if err := s.twitchClient.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start Twitch client: %w", err)
@@ -125,8 +135,8 @@ func (s *Server) Start(ctx context.Context) error {
 	// Start server in a goroutine
 	serverErrors := make(chan error, 1)
 	go func() {
-		s.logger.Info("Starting HTTP server", 
-			"addr", s.httpServer.Addr, 
+		s.logger.Info("Starting HTTP server",
+			"addr", s.httpServer.Addr,
 			"tls_enabled", s.config.Server.TLS.Enabled)
 
 		if s.config.Server.TLS.Enabled {
@@ -147,21 +157,21 @@ func (s *Server) Start(ctx context.Context) error {
 		}
 	case sig := <-shutdown:
 		s.logger.Info("Shutdown signal received", "signal", sig)
-		
+
 		// Graceful shutdown
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		
+
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
 			s.logger.Error("Server shutdown error", "error", err)
 			return fmt.Errorf("server shutdown error: %w", err)
 		}
 	case <-ctx.Done():
 		s.logger.Info("Context cancelled, shutting down server")
-		
+
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		
+
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
 			s.logger.Error("Server shutdown error", "error", err)
 			return fmt.Errorf("server shutdown error: %w", err)
@@ -182,6 +192,11 @@ func (s *Server) Start(ctx context.Context) error {
 		s.logger.Error("Output writer stop error", "error", err)
 	}
 
+	// Stop telemetry
+	if err := s.telemetryManager.Stop(ctx); err != nil {
+		s.logger.Error("Telemetry stop error", "error", err)
+	}
+
 	s.logger.Info("Server stopped gracefully")
 	return nil
 }
@@ -189,13 +204,59 @@ func (s *Server) Start(ctx context.Context) error {
 // setupRoutes configures the HTTP routes
 func (s *Server) setupRoutes(mux *http.ServeMux) {
 	// Health check endpoint
-	mux.HandleFunc("/health", s.handleHealth)
-	
-	// Twitch webhook endpoint (stub for now)
-	mux.HandleFunc("/twitch", s.handleTwitchWebhook)
-	
+	mux.HandleFunc("/health", s.instrumentHandler(s.handleHealth, "health"))
+
+	// Twitch webhook endpoint
+	mux.HandleFunc("/twitch", s.instrumentHandler(s.handleTwitchWebhook, "twitch_webhook"))
+
 	// Root endpoint
-	mux.HandleFunc("/", s.handleRoot)
+	mux.HandleFunc("/", s.instrumentHandler(s.handleRoot, "root"))
+}
+
+// instrumentHandler wraps HTTP handlers with telemetry
+func (s *Server) instrumentHandler(next http.HandlerFunc, operation string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		
+		// Start span
+		ctx, span := s.telemetryManager.StartSpan(ctx, fmt.Sprintf("http.%s", operation),
+			attribute.String("http.method", r.Method),
+			attribute.String("http.url", r.URL.String()),
+			attribute.String("http.user_agent", r.UserAgent()),
+		)
+		defer span.End()
+
+		// Track active requests
+		s.telemetryManager.RecordWebhookActive(ctx, 1)
+		defer s.telemetryManager.RecordWebhookActive(ctx, -1)
+
+		// Create response writer to capture status code
+		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		start := time.Now()
+		next(wrapped, r.WithContext(ctx))
+		duration := time.Since(start)
+
+		// Record metrics
+		s.telemetryManager.RecordWebhook(ctx, wrapped.statusCode < 400, duration, operation)
+
+		// Add attributes to span
+		span.SetAttributes(
+			attribute.Int("http.status_code", wrapped.statusCode),
+			attribute.Float64("http.duration_ms", float64(duration.Milliseconds())),
+		)
+	}
+}
+
+// responseWriter wraps http.ResponseWriter to capture status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 // setupTLS configures TLS with Let's Encrypt autocert
@@ -237,7 +298,7 @@ func (s *Server) setupTLS() error {
 		}()
 	}
 
-	s.logger.Info("TLS configured with Let's Encrypt", 
+	s.logger.Info("TLS configured with Let's Encrypt",
 		"domains", s.config.Server.TLS.Domains,
 		"cert_dir", s.config.Server.TLS.CertDir)
 
@@ -253,10 +314,10 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	
+
 	response := `{"status":"healthy","service":"itsjustintv","timestamp":"` + time.Now().UTC().Format(time.RFC3339) + `"}`
 	_, _ = w.Write([]byte(response))
-	
+
 	s.logger.Debug("Health check requested", "remote_addr", r.RemoteAddr)
 }
 
@@ -377,9 +438,15 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 // processStreamEvent processes a stream.online event and dispatches webhooks
 func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messageID string) error {
+	ctx, span := s.telemetryManager.StartSpan(context.Background(), "process_stream_event",
+		attribute.String("message_id", messageID),
+		attribute.String("broadcaster_user_id", processedEvent.Event.(twitch.StreamOnlineEvent).BroadcasterUserID))
+	defer span.End()
+
 	// Extract stream event data
 	streamEvent, ok := processedEvent.Event.(twitch.StreamOnlineEvent)
 	if !ok {
+		span.RecordError(fmt.Errorf("invalid stream event type"))
 		return fmt.Errorf("invalid stream event type")
 	}
 
@@ -390,12 +457,14 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 			"event_key", eventKey,
 			"broadcaster_login", streamEvent.BroadcasterUserLogin,
 			"message_id", messageID)
+		span.SetAttributes(attribute.Bool("duplicate", true))
 		return nil
 	}
 
 	// Add to cache to prevent future duplicates
 	eventData, _ := json.Marshal(streamEvent)
 	s.cacheManager.AddEvent(eventKey, eventData)
+	s.telemetryManager.RecordCacheOperation(ctx, "add", true)
 
 	// Find streamer configuration
 	var streamerKey string
