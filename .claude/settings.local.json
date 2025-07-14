@@ -1,4 +1,5 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(go test:*)",
@@ -10,9 +11,9 @@
       "Bash(git push:*)",
       "Bash(go get:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git tag:*)"
     ],
     "deny": []
-  },
-  "includeCoAuthoredBy": false
+  }
 }
