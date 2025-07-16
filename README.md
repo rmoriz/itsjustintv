@@ -101,9 +101,18 @@ just config
 
 Download the latest binary for your platform from the [releases page](https://github.com/rmoriz/itsjustintv/releases):
 
+**Latest Release: v0.3.0**
 - **Linux amd64**: `itsjustintv-linux-amd64`
 - **Linux arm64**: `itsjustintv-linux-arm64` 
 - **macOS aarch64**: `itsjustintv-darwin-aarch64`
+- **Windows amd64**: `itsjustintv-windows-amd64.exe`
+
+```bash
+# Example for Linux
+wget https://github.com/rmoriz/itsjustintv/releases/download/v0.3.0/itsjustintv-linux-amd64
+chmod +x itsjustintv-linux-amd64
+./itsjustintv-linux-amd64 --help
+```
 
 Or build from source:
 
