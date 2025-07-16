@@ -127,7 +127,7 @@ func DefaultConfig() *Config {
 		Telemetry: TelemetryConfig{
 			Enabled:        false,
 			ServiceName:    "itsjustintv",
-			ServiceVersion: "0.1.0",
+			ServiceVersion: "0.3.0",
 		},
 		GlobalWebhook: GlobalWebhookConfig{
 			Enabled:              false,

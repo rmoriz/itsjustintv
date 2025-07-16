@@ -31,7 +31,7 @@ func TestDefaultConfig(t *testing.T) {
 
 	assert.False(t, cfg.Telemetry.Enabled)
 	assert.Equal(t, "itsjustintv", cfg.Telemetry.ServiceName)
-	assert.Equal(t, "0.1.0", cfg.Telemetry.ServiceVersion)
+	assert.Equal(t, "0.3.0", cfg.Telemetry.ServiceVersion)
 
 	assert.NotNil(t, cfg.Streamers)
 	assert.Empty(t, cfg.Streamers)
