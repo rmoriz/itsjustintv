@@ -118,12 +118,12 @@ func (d *Dispatcher) Dispatch(ctx context.Context, req *DispatchRequest) *Dispat
 		if header == "" {
 			header = "X-Hub-Signature-256" // Default header
 		}
-		
+
 		hashing := req.WebhookHashing
 		if hashing == "" {
 			hashing = "SHA-256" // Default hashing
 		}
-		
+
 		validator := NewValidator(req.WebhookSecret)
 		signature := validator.GenerateSignature(payloadBytes, hashing)
 		httpReq.Header.Set(header, signature)

@@ -32,7 +32,7 @@ func (v *Validator) ValidateSignature(payload []byte, signature string) error {
 	// Determine algorithm from signature prefix
 	var hashFunc func() hash.Hash
 	var prefix string
-	
+
 	if strings.HasPrefix(signature, "sha1=") {
 		prefix = "sha1="
 		hashFunc = sha1.New

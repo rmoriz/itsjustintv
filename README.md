@@ -175,12 +175,12 @@ go build -o itsjustintv ./cmd/itsjustintv
 [streamers.example_streamer]
 user_id = "123456789"
 login = "example_streamer"
-webhook_url = "https://example.com/webhook"
+target_webhook_url = "https://example.com/webhook"
 
 # After (recommended - simpler!)
 [streamers.example_streamer]
 login = "example_streamer"  # user_id will be auto-resolved
-webhook_url = "https://example.com/webhook"
+target_webhook_url = "https://example.com/webhook"
 ```
 
 **How it works:**

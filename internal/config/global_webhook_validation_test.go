@@ -22,9 +22,9 @@ func TestGlobalWebhookValidation(t *testing.T) {
 		{
 			name: "valid global webhook config",
 			config: &Config{
-				Twitch:    TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
-				Server:    ServerConfig{Port: 8080},
-				Retry:     RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
+				Twitch: TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
+				Server: ServerConfig{Port: 8080},
+				Retry:  RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
 				GlobalWebhook: GlobalWebhookConfig{
 					Enabled: true,
 					URL:     "https://example.com/webhook",
@@ -35,9 +35,9 @@ func TestGlobalWebhookValidation(t *testing.T) {
 		{
 			name: "global webhook enabled but no URL",
 			config: &Config{
-				Twitch:    TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
-				Server:    ServerConfig{Port: 8080},
-				Retry:     RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
+				Twitch: TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
+				Server: ServerConfig{Port: 8080},
+				Retry:  RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
 				GlobalWebhook: GlobalWebhookConfig{
 					Enabled: true,
 					URL:     "",
@@ -49,9 +49,9 @@ func TestGlobalWebhookValidation(t *testing.T) {
 		{
 			name: "global webhook enabled with invalid URL",
 			config: &Config{
-				Twitch:    TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
-				Server:    ServerConfig{Port: 8080},
-				Retry:     RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
+				Twitch: TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
+				Server: ServerConfig{Port: 8080},
+				Retry:  RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
 				GlobalWebhook: GlobalWebhookConfig{
 					Enabled: true,
 					URL:     "invalid-url",
@@ -63,9 +63,9 @@ func TestGlobalWebhookValidation(t *testing.T) {
 		{
 			name: "global webhook enabled with HTTP URL",
 			config: &Config{
-				Twitch:    TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
-				Server:    ServerConfig{Port: 8080},
-				Retry:     RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
+				Twitch: TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
+				Server: ServerConfig{Port: 8080},
+				Retry:  RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
 				GlobalWebhook: GlobalWebhookConfig{
 					Enabled: true,
 					URL:     "http://localhost:8080/webhook",
@@ -76,9 +76,9 @@ func TestGlobalWebhookValidation(t *testing.T) {
 		{
 			name: "global webhook enabled with HTTPS URL",
 			config: &Config{
-				Twitch:    TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
-				Server:    ServerConfig{Port: 8080},
-				Retry:     RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
+				Twitch: TwitchConfig{ClientID: "test", ClientSecret: "test", WebhookSecret: "test"},
+				Server: ServerConfig{Port: 8080},
+				Retry:  RetryConfig{MaxAttempts: 3, BackoffFactor: 2.0},
 				GlobalWebhook: GlobalWebhookConfig{
 					Enabled: true,
 					URL:     "https://api.example.com/webhook",
@@ -103,7 +103,7 @@ func TestGlobalWebhookValidation(t *testing.T) {
 					return
 				}
 			}
-			
+
 			// For valid cases, no error from global webhook validation
 			if !tt.wantErr {
 				// Global webhook validation should pass
@@ -117,8 +117,8 @@ func TestGlobalWebhookValidation(t *testing.T) {
 
 func TestIsValidURL(t *testing.T) {
 	tests := []struct {
-		url     string
-		valid   bool
+		url   string
+		valid bool
 	}{
 		{"https://example.com/webhook", true},
 		{"http://localhost:8080/webhook", true},

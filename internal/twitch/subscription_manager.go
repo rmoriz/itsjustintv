@@ -248,7 +248,6 @@ func (sm *SubscriptionManager) getSubscriptions(ctx context.Context) (*Subscript
 	return &response, nil
 }
 
-
 // backgroundSync runs periodic subscription validation and cleanup
 func (sm *SubscriptionManager) backgroundSync(ctx context.Context) {
 	// Initial delay with splay (0-15 minutes)

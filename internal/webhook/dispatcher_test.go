@@ -93,11 +93,11 @@ func TestDispatchWithHMAC(t *testing.T) {
 	}
 
 	req := &DispatchRequest{
-		WebhookURL:  server.URL,
-		Payload:     payload,
-		WebhookSecret:  "test_secret",
-		StreamerKey: "test_streamer",
-		Attempt:     1,
+		WebhookURL:    server.URL,
+		Payload:       payload,
+		WebhookSecret: "test_secret",
+		StreamerKey:   "test_streamer",
+		Attempt:       1,
 	}
 
 	ctx := context.Background()
@@ -177,10 +177,10 @@ func TestCreatePayload(t *testing.T) {
 	dispatcher := NewDispatcher(cfg, logger)
 
 	streamerConfig := config.StreamerConfig{
-		UserID:             "123456789",
-		Login:              "teststreamer",
-		TargetWebhookURL:   "https://example.com/webhook",
-		AdditionalTags:     []string{"vip", "partner"},
+		UserID:           "123456789",
+		Login:            "teststreamer",
+		TargetWebhookURL: "https://example.com/webhook",
+		AdditionalTags:   []string{"vip", "partner"},
 	}
 
 	eventData := map[string]interface{}{

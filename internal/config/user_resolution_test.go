@@ -46,7 +46,7 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			config: &Config{
 				Streamers: map[string]StreamerConfig{
 					"test_streamer": {
-						Login:           "testuser",
+						Login:            "testuser",
 						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
@@ -57,8 +57,8 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			expectedConfig: &Config{
 				Streamers: map[string]StreamerConfig{
 					"test_streamer": {
-						UserID:     "123456789",
-						Login:           "testuser",
+						UserID:           "123456789",
+						Login:            "testuser",
 						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},
@@ -114,7 +114,7 @@ func TestResolveStreamerUserIDs(t *testing.T) {
 			config: &Config{
 				Streamers: map[string]StreamerConfig{
 					"unknown_streamer": {
-						Login:      "unknownuser",
+						Login:            "unknownuser",
 						TargetWebhookURL: "https://example.com/webhook",
 					},
 				},

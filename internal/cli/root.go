@@ -221,15 +221,17 @@ service_version = "1.6.0"
 [streamers.example_streamer]
 user_id = "123456789"
 login = "example_streamer"
-webhook_url = "https://your-webhook-endpoint.com/webhook"
+target_webhook_url = "https://your-webhook-endpoint.com/webhook"
 tag_filter = ["English", "Gaming"]  # Optional: only notify for streams with these tags
 additional_tags = ["custom_tag"]    # Optional: add custom tags to webhook payload
-hmac_secret = "optional_hmac_secret_for_this_webhook"
+target_webhook_secret = "optional_hmac_secret_for_this_webhook"
+target_webhook_header = "X-Hub-Signature-256"  # Optional: signature header name
+target_webhook_hashing = "SHA-256"             # Optional: hashing algorithm
 
 [streamers.another_streamer]
 user_id = "987654321"
 login = "another_streamer"
-webhook_url = "https://another-endpoint.com/webhook"
+target_webhook_url = "https://another-endpoint.com/webhook"
 # No tag_filter means all streams will trigger notifications
 additional_tags = ["vip_streamer"]
 `

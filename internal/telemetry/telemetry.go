@@ -26,19 +26,19 @@ type Manager struct {
 	meterProvider  *sdkmetric.MeterProvider
 	tracer         trace.Tracer
 	meter          metric.Meter
-	
+
 	// Metrics
-	webhookCounter       metric.Int64Counter
-	webhookDuration      metric.Float64Histogram
-	webhookActive        metric.Int64UpDownCounter
-	retryCounter         metric.Int64Counter
-	retryQueueSize       metric.Int64ObservableGauge
-	cacheOperations      metric.Int64Counter
-	cacheSize            metric.Int64ObservableGauge
-	twitchAPICalls       metric.Int64Counter
-	twitchAPIDuration    metric.Float64Histogram
-	configReloads        metric.Int64Counter
-	configReloadErrors   metric.Int64Counter
+	webhookCounter     metric.Int64Counter
+	webhookDuration    metric.Float64Histogram
+	webhookActive      metric.Int64UpDownCounter
+	retryCounter       metric.Int64Counter
+	retryQueueSize     metric.Int64ObservableGauge
+	cacheOperations    metric.Int64Counter
+	cacheSize          metric.Int64ObservableGauge
+	twitchAPICalls     metric.Int64Counter
+	twitchAPIDuration  metric.Float64Histogram
+	configReloads      metric.Int64Counter
+	configReloadErrors metric.Int64Counter
 }
 
 // NewManager creates a new telemetry manager

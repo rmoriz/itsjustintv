@@ -114,11 +114,6 @@ func (s *Server) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start output writer: %w", err)
 	}
 
-	// Start subscription manager
-	if err := s.subscriptionManager.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start subscription manager: %w", err)
-	}
-
 	// Setup routes
 	mux := http.NewServeMux()
 	s.setupRoutes(mux)
@@ -152,6 +147,14 @@ func (s *Server) Start(ctx context.Context) error {
 			serverErrors <- s.httpServer.ListenAndServe()
 		}
 	}()
+
+	// Wait a moment for the server to start listening
+	time.Sleep(100 * time.Millisecond)
+
+	// Start subscription manager AFTER HTTP server is running
+	if err := s.subscriptionManager.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start subscription manager: %w", err)
+	}
 
 	// Wait for shutdown signal or server error
 	shutdown := make(chan os.Signal, 1)
@@ -231,7 +234,7 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 func (s *Server) instrumentHandler(next http.HandlerFunc, operation string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		
+
 		// Start span
 		ctx, span := s.telemetryManager.StartSpan(ctx, fmt.Sprintf("http.%s", operation),
 			attribute.String("http.method", r.Method),
@@ -293,7 +296,7 @@ func (s *Server) startConfigWatcher(ctx context.Context) error {
 // handleConfigReload handles configuration changes and updates subscriptions
 func (s *Server) handleConfigReload(newConfig *config.Config) error {
 	ctx := context.Background()
-	
+
 	// Record config reload metric
 	if s.telemetryManager != nil {
 		s.telemetryManager.RecordConfigReload(ctx, true)
@@ -596,7 +599,7 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 				"streamer_login", streamEvent.BroadcasterUserLogin)
 			return nil
 		}
-		
+
 		s.logger.Warn("Failed to enrich payload, continuing with basic data",
 			"error", err,
 			"streamer_key", streamerKey)
@@ -607,7 +610,7 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 	webhookSecret := streamerConfig.TargetWebhookSecret
 	webhookHeader := streamerConfig.TargetWebhookHeader
 	webhookHashing := streamerConfig.TargetWebhookHashing
-	
+
 	// Use global webhook if streamer-specific URL is not provided and global is enabled
 	if webhookURL == "" && s.config.GlobalWebhook.Enabled && s.config.GlobalWebhook.URL != "" {
 		webhookURL = s.config.GlobalWebhook.URL
@@ -618,7 +621,7 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 			"streamer_key", streamerKey,
 			"webhook_url", webhookURL)
 	}
-	
+
 	// Validate webhook URL
 	if webhookURL == "" {
 		s.logger.Error("No webhook URL configured for streamer",
@@ -629,13 +632,13 @@ func (s *Server) processStreamEvent(processedEvent *twitch.ProcessedEvent, messa
 
 	// Create dispatch request
 	dispatchReq := &webhook.DispatchRequest{
-		WebhookURL:    webhookURL,
-		Payload:       *payload,
-		WebhookSecret: webhookSecret,
-		WebhookHeader: webhookHeader,
+		WebhookURL:     webhookURL,
+		Payload:        *payload,
+		WebhookSecret:  webhookSecret,
+		WebhookHeader:  webhookHeader,
 		WebhookHashing: webhookHashing,
-		StreamerKey:   streamerKey,
-		Attempt:       1,
+		StreamerKey:    streamerKey,
+		Attempt:        1,
 	}
 
 	// Attempt initial dispatch

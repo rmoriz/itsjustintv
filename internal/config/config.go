@@ -12,24 +12,24 @@ import (
 
 // Config represents the main configuration structure
 type Config struct {
-	Server     ServerConfig              `toml:"server"`
-	Twitch     TwitchConfig              `toml:"twitch"`
-	Streamers  map[string]StreamerConfig `toml:"streamers"`
-	Retry      RetryConfig               `toml:"retry"`
-	Output     OutputConfig              `toml:"output"`
-	Telemetry  TelemetryConfig           `toml:"telemetry"`
-	GlobalWebhook GlobalWebhookConfig    `toml:"global_webhook"`
-	
+	Server        ServerConfig              `toml:"server"`
+	Twitch        TwitchConfig              `toml:"twitch"`
+	Streamers     map[string]StreamerConfig `toml:"streamers"`
+	Retry         RetryConfig               `toml:"retry"`
+	Output        OutputConfig              `toml:"output"`
+	Telemetry     TelemetryConfig           `toml:"telemetry"`
+	GlobalWebhook GlobalWebhookConfig       `toml:"global_webhook"`
+
 	// Internal fields (not loaded from TOML)
 	configPath string
 }
 
 // ServerConfig holds HTTP server configuration
 type ServerConfig struct {
-	ListenAddr   string `toml:"listen_addr"`
-	Port         int    `toml:"port"`
+	ListenAddr     string `toml:"listen_addr"`
+	Port           int    `toml:"port"`
 	ExternalDomain string `toml:"external_domain"`
-	TLS          struct {
+	TLS            struct {
 		Enabled bool     `toml:"enabled"`
 		Domains []string `toml:"domains"`
 		CertDir string   `toml:"cert_dir"`
@@ -38,23 +38,23 @@ type ServerConfig struct {
 
 // TwitchConfig holds Twitch API configuration
 type TwitchConfig struct {
-	ClientID          string `toml:"client_id"`
-	ClientSecret      string `toml:"client_secret"`
-	WebhookSecret     string `toml:"webhook_secret"`
-	TokenFile         string `toml:"token_file"`
+	ClientID           string `toml:"client_id"`
+	ClientSecret       string `toml:"client_secret"`
+	WebhookSecret      string `toml:"webhook_secret"`
+	TokenFile          string `toml:"token_file"`
 	IncomingWebhookURL string `toml:"incoming_webhook_url"`
 }
 
 // StreamerConfig holds individual streamer configuration
 type StreamerConfig struct {
-	UserID              string   `toml:"user_id"`
-	Login               string   `toml:"login"`
-	TargetWebhookURL    string   `toml:"target_webhook_url"`
-	TagFilter           []string `toml:"tag_filter"`
-	AdditionalTags      []string `toml:"additional_tags"`
-	TargetWebhookSecret string   `toml:"target_webhook_secret"`
-	TargetWebhookHeader string   `toml:"target_webhook_header"`
-	TargetWebhookHashing string  `toml:"target_webhook_hashing"`
+	UserID               string   `toml:"user_id"`
+	Login                string   `toml:"login"`
+	TargetWebhookURL     string   `toml:"target_webhook_url"`
+	TagFilter            []string `toml:"tag_filter"`
+	AdditionalTags       []string `toml:"additional_tags"`
+	TargetWebhookSecret  string   `toml:"target_webhook_secret"`
+	TargetWebhookHeader  string   `toml:"target_webhook_header"`
+	TargetWebhookHashing string   `toml:"target_webhook_hashing"`
 }
 
 // RetryConfig holds retry mechanism configuration
@@ -84,11 +84,11 @@ type TelemetryConfig struct {
 // GlobalWebhookConfig holds global webhook configuration
 // This provides a fallback webhook URL when streamer-specific URLs are not provided
 type GlobalWebhookConfig struct {
-	Enabled               bool   `toml:"enabled"`
-	URL                   string `toml:"url"`
-	TargetWebhookSecret   string `toml:"target_webhook_secret"`
-	TargetWebhookHeader   string `toml:"target_webhook_header"`
-	TargetWebhookHashing  string `toml:"target_webhook_hashing"`
+	Enabled              bool   `toml:"enabled"`
+	URL                  string `toml:"url"`
+	TargetWebhookSecret  string `toml:"target_webhook_secret"`
+	TargetWebhookHeader  string `toml:"target_webhook_header"`
+	TargetWebhookHashing string `toml:"target_webhook_hashing"`
 }
 
 // DefaultConfig returns a configuration with sensible defaults
@@ -130,11 +130,11 @@ func DefaultConfig() *Config {
 			ServiceVersion: "0.1.0",
 		},
 		GlobalWebhook: GlobalWebhookConfig{
-			Enabled:               false,
-			URL:                   "",
-			TargetWebhookSecret:   "",
-			TargetWebhookHeader:   "X-Hub-Signature-256",
-			TargetWebhookHashing:  "SHA-256",
+			Enabled:              false,
+			URL:                  "",
+			TargetWebhookSecret:  "",
+			TargetWebhookHeader:  "X-Hub-Signature-256",
+			TargetWebhookHashing: "SHA-256",
 		},
 		Streamers: make(map[string]StreamerConfig),
 	}
@@ -167,7 +167,7 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// Set config path for later reference
 	config.configPath = configPath
-	
+
 	return config, nil
 }
 

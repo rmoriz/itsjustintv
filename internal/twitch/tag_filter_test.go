@@ -1,8 +1,8 @@
 package twitch
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestCheckTagFilter(t *testing.T) {

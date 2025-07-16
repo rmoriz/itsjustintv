@@ -95,7 +95,7 @@ func (e *Enricher) EnrichPayload(ctx context.Context, payload *webhook.WebhookPa
 
 		// Merge dynamic tags (Twitch-provided) with static additional tags
 		allTags := make([]string, 0, len(channelInfo.Tags)+len(payload.AdditionalTags))
-		allTags = append(allTags, channelInfo.Tags...) // Twitch-provided tags
+		allTags = append(allTags, channelInfo.Tags...)       // Twitch-provided tags
 		allTags = append(allTags, payload.AdditionalTags...) // Static additional tags
 		payload.Tags = allTags
 
